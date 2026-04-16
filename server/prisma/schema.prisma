@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Hotel {
+  id              String   @id @default(cuid())
+  name            String
+  domain          String?
+  logoUrl         String?
+  airbnbIcalUrl   String?
+  bookingIcalUrl  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  roomTypes       RoomType[]
+  extraServices   ExtraService[]
+}
+
+model RoomType {
+  id          String   @id @default(cuid())
+  name        String   // e.g., Suite, Standard
+  description String?
+  basePrice   Float
+  capacity    Int
+  hotelId     String
+  hotel       Hotel    @relation(fields: [hotelId], references: [id])
+  rooms       Room[]
+}
+
+model Room {
+  id                 String   @id @default(cuid())
+  number             String
+  floor              Int?
+  status             String   @default("AVAILABLE") // AVAILABLE, MAINTENANCE
+  housekeepingStatus String   @default("CLEAN") // CLEAN, DIRTY, IN_SERVICE
+  roomTypeId         String
+  roomType           RoomType @relation(fields: [roomTypeId], references: [id])
+  bookings           Booking[]
+}
+
+model ExtraService {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  hotelId     String
+  hotel       Hotel     @relation(fields: [hotelId], references: [id])
+  bookings    Booking[] @relation("BookingToExtraService")
+  createdAt   DateTime  @default(now())
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  guestName       String
+  guestEmail      String
+  checkIn         DateTime
+  checkOut        DateTime
+  status          String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED, COMPLETED
+  totalPrice      Float
+  source          String   @default("LOCAL") // LOCAL, AIRBNB, BOOKING
+  externalId      String?  // ID de la reserva externa
+  stripeSessionId String?  // ID de la sesión de Stripe
+  roomId          String
+  room            Room     @relation(fields: [roomId], references: [id])
+  extraServices   ExtraService[] @relation("BookingToExtraService")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
