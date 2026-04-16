@@ -79,10 +79,51 @@ VITE_SUPABASE_ANON_KEY="[YOUR_ANON_KEY]"
 
 ---
 
-## 5. Guía de Inicio Rápido
+## 5. Guía de Inicio Rápido (Local)
 
 1.  Clonar el repositorio.
 2.  Ejecutar `npm install` en ambas carpetas (`client` y `server`).
-3.  Configurar el archivo `.env` con las credenciales de Supabase.
-4.  Ejecutar `npx prisma db push` para subir las tablas a Supabase.
-5.  Correr `npm run dev` para iniciar el desarrollo.
+3.  Ejecutar `npx prisma db push` para mapear la base local SQLite.
+4.  Correr `npm run dev` en frontend y backend para iniciar el entorno.
+
+---
+
+## 6. Guía de Despliegue en Producción (Ubuntu / PM2)
+
+Para entornos VPS (como AWS, DigitalOcean o locales), HotelTriz está optimizado para correr usando PM2, evitando sobrecarga de memoria en el servidor.
+
+### Pasos de Instalación:
+
+**1. Conexión SSH al Servidor**
+```bash
+ssh -i /ruta/a/tu/llave.pem ubuntu@DIRECCION_IP
+```
+
+**2. Descarga del Proyecto en el Home**
+```bash
+cd /home/ubuntu
+git clone https://github.com/frannivan/HotelTriz.git
+```
+
+**3. Compilar Backend (Puerto 3031)**
+```bash
+cd /home/ubuntu/HotelTriz/server
+npm install
+npx prisma generate
+npx prisma db push
+```
+
+**4. Compilar Frontend (Puerto 3030)**
+```bash
+cd /home/ubuntu/HotelTriz/client
+npm install
+npm run build
+```
+
+**5. Encendido Inmortal con PM2**
+```bash
+cd /home/ubuntu/HotelTriz
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup
+```
