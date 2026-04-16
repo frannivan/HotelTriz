@@ -5,20 +5,16 @@ module.exports = {
       script: "server/src/index.js",
       watch: false,
       env: {
-        PORT: 3001,
+        PORT: 3031, // Puerto Seguro Asignado
         NODE_ENV: "production",
-        // Aquí deberás poner tus llaves secretas en Ubuntu
-        // DATABASE_URL: "file:./prisma/dev.db" 
-        // STRIPE_SECRET_KEY: "sk_live_..."
       }
     },
     {
       name: "hoteltriz-frontend",
       script: "npm",
-      args: "run preview --prefix client",
+      args: "run preview --prefix client -- --port 3030 --host", // Forzamos a Vite a usar 3030
       watch: false,
       env: {
-        PORT: 3000,
         NODE_ENV: "production"
       }
     }
