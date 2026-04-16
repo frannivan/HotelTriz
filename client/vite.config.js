@@ -7,10 +7,5 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-  ],
-  build: {
-    target: 'esnext',
-    minify: 'terser',
-    cssMinify: true
-  }
+  ]
 })
