@@ -3,6 +3,7 @@ import { roomService } from '../../services/api';
 
 const TapeChart = () => {
   const [bookings, setBookings] = useState([]);
+  const [allRooms, setAllRooms] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Generar próximos 14 días para el Gantt
@@ -20,21 +21,23 @@ const TapeChart = () => {
   const dates = generateDates();
 
   useEffect(() => {
-    const fetchBookings = async () => {
+    const fetchData = async () => {
       try {
-        const data = await roomService.getAdminBookings();
-        setBookings(data);
+        const [bookingsData, roomsData] = await Promise.all([
+          roomService.getAdminBookings(),
+          roomService.getHousekeepingTasks() // Truco: usamos este endpoint para obtener todo el inventario físico de cuartos
+        ]);
+        setBookings(bookingsData);
+        // roomsData trae todos los rooms del edificio
+        setAllRooms(roomsData);
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching admin bookings:", error);
+        console.error("Error fetching TapeChart data:", error);
         setLoading(false);
       }
     };
-    fetchBookings();
+    fetchData();
   }, []);
-
-  // Extraer habitaciones únicas de las reservas (modo simplificado para el demo)
-  const rooms = [...new Map(bookings.map(b => [b.room?.number, b.room])).values()].filter(Boolean);
 
   if (loading) return <div className="p-10 text-center text-xs text-gray-500 uppercase tracking-widest font-semibold">Cargando Calendario...</div>;
 
@@ -60,7 +63,7 @@ const TapeChart = () => {
           </div>
 
           {/* Room Rows */}
-          {rooms.map(room => {
+          {allRooms.map(room => {
             // Filtrar reservas válidas para esta habitación
             const roomBookings = bookings.filter(b => b.roomId === room.id && b.status !== 'CANCELLED');
             
@@ -123,10 +126,9 @@ const TapeChart = () => {
               </div>
             );
           })}
-          
-          {rooms.length === 0 && (
+          {allRooms.length === 0 && (
             <div className="text-center py-10 text-xs text-gray-500">
-              No hay reservas activas para graficar.
+              No hay habitaciones en el edificio actualmente.
             </div>
           )}
         </div>
