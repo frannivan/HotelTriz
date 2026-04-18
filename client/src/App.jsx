@@ -236,10 +236,10 @@ function App() {
               </div>
               
               <div className="hidden md:flex items-center gap-8 text-xs font-semibold tracking-widest text-gray-500 uppercase">
-                <a href="#" className="hover:text-[#C5A059] transition-colors">Habitaciones</a>
-                <a href="#" className="hover:text-[#C5A059] transition-colors">Servicios</a>
-                <button className="bg-[#111] text-white px-6 py-2.5 rounded-md hover:bg-[#C5A059] transition-colors shadow-sm">
-                  MI RESERVA
+                <a href="#habitaciones" className="hover:text-[#C5A059] transition-colors">Habitaciones</a>
+                <a href="#servicios" className="hover:text-[#C5A059] transition-colors">Servicios</a>
+                <button onClick={() => document.getElementById('habitaciones').scrollIntoView({ behavior: 'smooth' })} className="bg-[#111] text-white px-6 py-2.5 rounded-md hover:bg-[#C5A059] transition-colors shadow-sm">
+                  RESERVAR
                 </button>
               </div>
             </div>
@@ -279,7 +279,7 @@ function App() {
           </header>
 
           {/* Grid de Habitaciones */}
-          <section className="max-w-6xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <section id="habitaciones" className="max-w-6xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-10">
               <div className="flex items-center justify-between border-b border-gray-200 pb-4">
                 <h2 className="text-2xl font-semibold tracking-tight text-[#111]">Habitaciones Disponibles</h2>
@@ -302,7 +302,7 @@ function App() {
             </div>
 
             {/* Panel de Extras Rediseñado */}
-            <div className="space-y-8">
+            <div id="servicios" className="space-y-8">
               <h3 className="text-xl font-semibold tracking-tight text-[#111] border-b border-gray-200 pb-4">Añadir Servicios</h3>
               <div className="space-y-4">
                 {allExtras.map(extra => (
