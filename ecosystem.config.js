@@ -12,8 +12,9 @@ module.exports = {
     },
     {
       name: "hoteltriz-frontend",
-      script: "npm",
-      args: "run preview --prefix client -- --port 3030 --host", // Forzamos a Vite a usar 3030
+      script: "node_modules/vite/bin/vite.js",
+      args: "preview --port 3030 --host",
+      cwd: "./client",
       watch: false,
       env: {
         NODE_ENV: "production"
