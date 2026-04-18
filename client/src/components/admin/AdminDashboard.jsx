@@ -3,20 +3,26 @@ import { roomService } from '../../services/api';
 import SyncSettings from './SyncSettings';
 import TapeChart from './TapeChart';
 import HousekeepingPanel from './HousekeepingPanel';
+import ManualBookingModal from './ManualBookingModal';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('bookings'); 
   const [stats, setStats] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [allRooms, setAllRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const statsData = await roomService.getAdminStats();
       const bookingsData = await roomService.getAdminBookings();
+      const roomsData = await roomService.getHousekeepingTasks();
+      
       setStats(statsData);
       setBookings(bookingsData);
+      setAllRooms(roomsData);
       setLoading(false);
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -78,9 +84,14 @@ const AdminDashboard = () => {
             </button>
           </div>
         </div>
-        <button onClick={fetchData} className="px-5 py-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-[11px] font-semibold tracking-wider text-[#111] uppercase shadow-sm">
-          Refrescar
-        </button>
+        <div className="flex gap-3">
+          <button onClick={() => setIsModalOpen(true)} className="px-5 py-2.5 bg-[#111] text-white rounded-lg hover:bg-[#C5A059] transition-colors text-[11px] font-semibold tracking-wider uppercase shadow-sm">
+            <i className="fa-solid fa-plus mr-2"></i>Nueva Reserva
+          </button>
+          <button onClick={fetchData} className="px-5 py-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-[11px] font-semibold tracking-wider text-[#111] uppercase shadow-sm">
+            <i className="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
       </div>
 
       {activeTab === 'bookings' && (
@@ -141,9 +152,22 @@ const AdminDashboard = () => {
                         <div className="font-semibold text-[#C5A059] text-sm">${booking.totalPrice.toFixed(2)}</div>
                       </td>
                       <td className="px-6 py-5">
-                        <span className={`px-3 py-1 rounded text-[9px] font-bold uppercase tracking-wider border ${getStatusColor(booking.status)}`}>
-                          {booking.status}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-3 py-1 rounded text-[9px] font-bold uppercase tracking-wider border ${getStatusColor(booking.status)}`}>
+                            {booking.status}
+                          </span>
+                          {booking.status === 'PENDING' && (
+                            <button 
+                              onClick={async () => {
+                                await roomService.confirmAdminBooking(booking.id);
+                                fetchData();
+                              }}
+                              className="text-[10px] bg-green-500 text-white font-bold uppercase tracking-wider px-3 py-1 rounded hover:bg-green-600 transition-colors"
+                            >
+                              Cobrar
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -172,6 +196,13 @@ const AdminDashboard = () => {
       {activeTab === 'housekeeping' && (
         <HousekeepingPanel />
       )}
+
+      <ManualBookingModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        allRooms={allRooms} 
+        onSuccess={() => { setIsModalOpen(false); fetchData(); }} 
+      />
     </div>
   );
 };

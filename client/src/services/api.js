@@ -39,6 +39,21 @@ export const roomService = {
     return response.json();
   },
   // Métodos Administrativos (Fase 3 & Auth)
+  createAdminBooking: async (bookingData) => {
+    try {
+      const response = await api.post('/admin/bookings/new', bookingData);
+      return response.data;
+    } catch (error) {
+      if (error.response && error.response.status === 409) {
+        throw error.response.data; // Lanzar objeto de conflicto { error, conflictType }
+      }
+      throw new Error('Error de red al crear reserva');
+    }
+  },
+  confirmAdminBooking: async (id) => {
+    const response = await api.patch(`/admin/bookings/${id}/status`, { status: 'CONFIRMED' });
+    return response.data;
+  },
   loginAdmin: async (password) => {
     const response = await api.post('/admin/login', { password });
     return response.data;

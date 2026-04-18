@@ -277,6 +277,106 @@ app.patch('/api/admin/rooms/:id/housekeeping', async (req, res) => {
 });
 
 
+// === Módulo de Reservas Físicas (Recepción) ===
+app.post('/api/admin/bookings/new', async (req, res) => {
+  const { guestName, checkIn, checkOut, roomId, totalPrice, force } = req.body;
+  
+  if (!checkIn || !checkOut || !roomId) {
+    return res.status(400).json({ error: 'Faltan datos obligatorios' });
+  }
+
+  try {
+    const cIn = new Date(checkIn);
+    const cOut = new Date(checkOut);
+    
+    // 1. Verificación Local: Comprobar colisión estricta en la Base de Datos para esta habitación específica
+    const localConflicts = await prisma.booking.findMany({
+      where: {
+        roomId,
+        status: { not: 'CANCELLED' },
+        AND: [
+          { checkIn: { lt: cOut } },
+          { checkOut: { gt: cIn } }
+        ]
+      }
+    });
+
+    if (localConflicts.length > 0 && !force) {
+      return res.status(409).json({ 
+        error: 'CONFLICTO LOCAL: Esta habitación ya está ocupada en esas fechas en tu sistema interno. ¿Deseas sobreescribir y forzar la reserva?',
+        conflictType: 'LOCAL'
+      });
+    }
+
+    // 2. Verificación Externa (Pre-Flight iCal)
+    if (!force) {
+      const hotel = await prisma.hotel.findFirst();
+      if (hotel) {
+        const urls = [hotel.airbnbIcalUrl, hotel.bookingIcalUrl].filter(Boolean);
+        for (const url of urls) {
+          try {
+            const data = await new Promise((resolve, reject) => {
+              https.get(url, (resp) => { let str = ''; resp.on('data', chunk => str += chunk); resp.on('end', () => resolve(str)); }).on('error', reject);
+            });
+            const events = parseIcal(data);
+            
+            // Comprobar si hay un evento externo que coincida con las fechas (Aviso general de OTA)
+            const hasOtaConflict = events.some(event => {
+              const eIn = icalToDate(event.start);
+              const eOut = icalToDate(event.end);
+              return eIn < cOut && eOut > cIn;
+            });
+            
+            if (hasOtaConflict) {
+              return res.status(409).json({ 
+                error: 'ALERTA AGENCIAS: Se ha detectado una reserva en Booking.com / Airbnb que choca con estas fechas. ¿Forzar inserción de todas formas?',
+                conflictType: 'OTA'
+              });
+            }
+          } catch (e) {
+            console.error('Error pre-flight iCal:', e);
+            // Si falla la OTA, seguimos silenciosamente (por ser caché) o podríamos alertar.
+          }
+        }
+      }
+    }
+
+    // 3. Inserción Directa
+    const booking = await prisma.booking.create({
+      data: {
+        guestName: guestName || 'Walk-in Guest',
+        guestEmail: 'recepcion@hoteltriz.com',
+        checkIn: cIn,
+        checkOut: cOut,
+        totalPrice: parseFloat(totalPrice) || 0,
+        status: 'PENDING', // Cobro en mostrador pendiente
+        source: 'LOCAL',
+        roomId
+      }
+    });
+
+    res.json({ message: 'Reserva administrativa creada', booking });
+  } catch (error) {
+    console.error('Error Admin Booking:', error);
+    res.status(500).json({ error: 'Error del servidor al crear reserva' });
+  }
+});
+
+// Cobrar y Confirmar Reserva Manual
+app.patch('/api/admin/bookings/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  try {
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: { status }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al cambiar estatus' });
+  }
+});
+
 // === FASE 4: SINCRONIZACIÓN ICAL (PUENTE) ===
 
 const https = require('https');
