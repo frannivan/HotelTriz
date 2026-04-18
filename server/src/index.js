@@ -81,12 +81,12 @@ app.get('/api/extra-services', async (req, res) => {
   }
 });
 
-// Crear una reserva y sesión de cobro en Stripe
+// Crear una reserva pública (Sin pasarela de pago por ahora)
 app.post('/api/bookings', async (req, res) => {
   const { guestName, guestEmail, checkIn, checkOut, roomId, extraServices, totalPrice } = req.body;
 
   try {
-    // 1. Crear reserva en la BD con estado PENDING
+    // 1. Crear reserva en la BD con estado PENDING (Pago en efectivo en recepción)
     const booking = await prisma.booking.create({
       data: {
         guestName,
@@ -95,6 +95,7 @@ app.post('/api/bookings', async (req, res) => {
         checkOut: new Date(checkOut),
         totalPrice,
         status: 'PENDING',
+        source: 'LOCAL',
         room: { connect: { id: roomId } },
         extraServices: {
           connect: (extraServices || []).map(id => ({ id }))
@@ -102,43 +103,15 @@ app.post('/api/bookings', async (req, res) => {
       }
     });
 
-    // 2. Crear Sesión de Stripe Checkout Segura
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `Estancia en HotelTriz - ${guestName}`,
-              description: `Alojamiento del ${checkIn} al ${checkOut}`
-            },
-            unit_amount: Math.round(totalPrice * 100), // Stripe opera en centavos
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      // Permite testear localmente sin Ngrok regresando el session_id
-      success_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
-      cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}?payment_cancelled=true`,
-      client_reference_id: booking.id,
-    });
-
-    // 3. Guardar el session ID provisionalmente
-    await prisma.booking.update({
-      where: { id: booking.id },
-      data: { stripeSessionId: session.id }
-    });
-
-    res.json({ message: 'Redirigiendo a pasarela', url: session.url, booking });
+    // Desactivamos Stripe a petición del usuario. La reserva queda como PENDING para ser cobrada físicamente.
+    res.json({ message: 'Reserva creada exitosamente', booking });
   } catch (error) {
     console.error('Booking Error:', error);
-    res.status(500).json({ error: 'Error al procesar reserva o comunicación con Stripe' });
+    res.status(500).json({ error: 'Error al procesar reserva en la base de datos' });
   }
 });
 
-// Endpoint de confirmación (Para uso local sin Webhook Tunnel)
+// Endpoint de confirmación (Desactivado temporalmente - uso futuro para Stripe Webhooks)
 app.post('/api/payments/confirm', async (req, res) => {
   const { session_id, booking_id } = req.body;
   try {

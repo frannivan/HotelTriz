@@ -93,29 +93,32 @@ function App() {
     );
   };
 
-  const confirmBooking = async () => {
+  const confirmBooking = async (formData) => {
     const subtotal = selectedRoom.basePrice + allExtras.filter(e => selectedExtras.includes(e.id)).reduce((sum, e) => sum + e.price, 0);
     const total = subtotal * 1.15;
 
     setLoading(true);
     try {
-      const response = await roomService.createBooking({
-        guestName: 'Huésped Demostración',
-        guestEmail: 'demo@hoteltriz.com',
+      const payload = {
+        guestName: formData.guestName,
+        guestEmail: formData.guestEmail,
         checkIn: search.checkIn,
         checkOut: search.checkOut,
         roomId: selectedRoom.rooms[0].id,
         extraServices: selectedExtras,
         totalPrice: total
-      });
+      };
+
+      // Si tenemos endpoints backend especiales para admin vs public, usamos el de reservas publicas.
+      // Aquí estamos llamando a roomService.createBooking que hace el POST.
+      await roomService.createBooking(payload);
       
-      if (response.url) {
-        window.location.href = response.url; // Redirigir a pasarela de Stripe
-      } else {
-        throw new Error("No URL returned from Stripe");
-      }
+      // En lugar de redirigir a Stripe, mostramos la pantalla de éxito directamente
+      setBookingStatus('success');
+      setLoading(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      alert('Error de conexión con la pasarela de pagos');
+      alert(err.response?.data?.error || 'Error de conexión. La habitación ya no está disponible.');
       setLoading(false);
     }
   };
@@ -127,9 +130,9 @@ function App() {
           <div className="w-16 h-16 bg-[#C5A059] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-[#C5A059]/30">
             <i className="fa-solid fa-check text-2xl text-white"></i>
           </div>
-          <h1 className="text-2xl font-bold mb-3 tracking-tight">Pago Exitoso</h1>
+          <h1 className="text-2xl font-bold mb-3 tracking-tight">Reserva Recibida</h1>
           <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-            Su transacción vía Stripe ha sido procesada correctamente. Su reserva está confirmada.
+            Hemos recibido su solicitud de reserva correctamente. Recuerde que su pago se realizará directamente en el hotel al momento de su llegada.
           </p>
           <button 
             onClick={() => { setBookingStatus(null); setView('client'); }}
