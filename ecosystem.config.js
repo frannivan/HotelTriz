@@ -2,7 +2,8 @@ module.exports = {
   apps: [
     {
       name: "hoteltriz-backend",
-      script: "server/src/index.js",
+      script: "src/index.js",
+      cwd: "./server",
       watch: false,
       env: {
         PORT: 3031, // Puerto Seguro Asignado
