@@ -108,8 +108,9 @@ const BookingSummary = ({ selectedRoom, selectedExtras, allExtras, searchData, o
               placeholder="correo@ejemplo.com" 
             />
           </div>
-          <p className="text-[10px] text-gray-400 font-medium leading-relaxed mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
-            * El pago no se realizará en línea en este momento. Deberá liquidar su reserva directamente en recepción el día de su llegada.
+          <p className="text-[10px] text-gray-400 font-medium leading-relaxed mt-4 bg-[#FFFDF8] p-3 rounded-lg border border-[#C5A059]/20 flex items-center gap-2">
+            <i className="fa-solid fa-shield-halved text-[#C5A059]"></i>
+            Pago procesado de forma segura mediante Stripe. Se le redirigirá para completar la transacción.
           </p>
         </form>
       )}
@@ -137,7 +138,7 @@ const BookingSummary = ({ selectedRoom, selectedExtras, allExtras, searchData, o
           ) : step === 1 ? (
             <>Continuar <i className="fa-solid fa-chevron-right text-[10px] transition-transform group-hover:translate-x-1"></i></>
           ) : (
-            <>Finalizar Reserva</>
+            <>Proceder al Pago Seguro</>
           )}
         </button>
       </div>

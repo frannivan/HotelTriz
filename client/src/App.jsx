@@ -136,9 +136,9 @@ function App() {
           <div className="w-16 h-16 bg-[#C5A059] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-[#C5A059]/30">
             <i className="fa-solid fa-check text-2xl text-white"></i>
           </div>
-          <h1 className="text-2xl font-bold mb-3 tracking-tight">Reserva Recibida</h1>
+          <h1 className="text-2xl font-bold mb-3 tracking-tight">¡Reserva Confirmada!</h1>
           <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-            Hemos recibido su solicitud de reserva correctamente. Recuerde que su pago se realizará directamente en el hotel al momento de su llegada.
+            Hemos recibido su pago correctamente. Los detalles de su estancia han sido enviados a su correo electrónico. ¡Le esperamos!
           </p>
           <button 
             onClick={() => { setBookingStatus(null); setView('client'); }}
