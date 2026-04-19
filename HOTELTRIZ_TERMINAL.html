@@ -65,7 +65,9 @@
         .log-line { margin-bottom: 0.2rem; display: flex; gap: 0.8rem; border-left: 2px solid var(--border); padding-left: 0.8rem; }
         .log-time { color: #444; flex-shrink: 0; }
         .log-content { word-break: break-all; }
-        .log-content.err { color: var(--danger); }
+        .log-content.err { color: var(--danger); font-weight: bold; }
+        .log-content.success { color: var(--accent); font-weight: bold; }
+        .log-content.info { color: var(--primary); }
 
         .db-controls { padding: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
         .btn-db { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border); }
@@ -232,11 +234,12 @@
         const line = document.createElement('div');
         line.className = 'log-line';
         
-        const isErr = content.includes('[ERR]');
+        const isErr = content.includes('[ERR]') || content.includes('❌');
+        const isSuccess = content.includes('✅') || content.includes('✨') || content.includes('🚀');
         
         line.innerHTML = `
             <span class="log-time">[${time}]</span>
-            <span class="log-content ${isErr ? 'err' : ''}">${content.replace('[ERR]', '')}</span>
+            <span class="log-content ${isErr ? 'err' : (isSuccess ? 'success' : '')}">${content.replace('[ERR]', '')}</span>
         `;
         
         div.appendChild(line);

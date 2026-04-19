@@ -66,7 +66,15 @@ function runCommand(app, cmd, args, cwd) {
     child.on('close', (code) => {
         if (app !== 'db') updateState(app, 'stopped');
         processes[app].child = null;
-        addLog(app, `Proceso finalizado con código ${code}`);
+        
+        if (code === 0) {
+            addLog(app, `✅ ÉXITO: Proceso finalizado correctamente (Código ${code})`);
+            if (app === 'git_push') addLog(app, `🚀 TODO LISTO: Los cambios se subieron a GitHub. Ahora puedes darle a DEPLOY.`);
+            if (app === 'server_deploy') addLog(app, `✨ COMPLETO: Los cambios ya están activos en el servidor DuckDNS.`);
+        } else {
+            addLog(app, `❌ ERROR: El proceso falló (Código ${code})`);
+            addLog(app, `⚠️ REVISA: Revisa los mensajes de arriba en rojo para ver qué falló.`);
+        }
     });
 
     if (app !== 'db') processes[app].child = child;
