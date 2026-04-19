@@ -169,8 +169,8 @@ app.post('/api/bookings', async (req, res) => {
       metadata: {
         bookingId: booking.id
       },
-      success_url: `${clientUrl}/?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
-      cancel_url: `${clientUrl}/?payment_cancelled=true`,
+      success_url: `${clientUrl.replace(/\/$/, '')}/?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
+      cancel_url: `${clientUrl.replace(/\/$/, '')}/?payment_cancelled=true`,
     });
 
     // 4. Guardar ID de sesión en la reserva
@@ -194,6 +194,8 @@ app.post('/api/bookings', async (req, res) => {
 // Endpoint de confirmación (Desactivado temporalmente - uso futuro para Stripe Webhooks)
 app.post('/api/payments/confirm', async (req, res) => {
   const { session_id, booking_id } = req.body;
+  console.log(`🔍 Intentando confirmar pago manualmente: Session=${session_id}, Booking=${booking_id}`);
+  
   try {
     const session = await stripe.checkout.sessions.retrieve(session_id);
     if (session.payment_status === 'paid') {
