@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const BookingSummary = ({ selectedRoom, selectedExtras, allExtras, searchData, onConfirm }) => {
+const BookingSummary = ({ selectedRoom, selectedExtras, allExtras, searchData, onConfirm, onClose }) => {
   const [formData, setFormData] = useState({ guestName: '', guestEmail: '' });
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -31,9 +31,14 @@ const BookingSummary = ({ selectedRoom, selectedExtras, allExtras, searchData, o
         <h3 className="text-xl font-semibold text-[#111]">
           {step === 1 ? 'Su Estancia' : 'Tus Datos'}
         </h3>
-        <span className="bg-[#FFFDF8] text-[#C5A059] border border-[#C5A059]/20 text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
-          Paso {step} de 2
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="bg-[#FFFDF8] text-[#C5A059] border border-[#C5A059]/20 text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+            Paso {step} de 2
+          </span>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-colors">
+            <i className="fa-solid fa-xmark"></i>
+          </button>
+        </div>
       </div>
 
       {step === 1 ? (

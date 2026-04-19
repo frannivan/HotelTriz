@@ -11,7 +11,9 @@ const PORT = 3050; // Puerto diferente para no chocar con Reyval si ambos están
 const processes = {
     server: { child: null, state: 'stopped', logs: [] },
     client: { child: null, state: 'stopped', logs: [] },
-    db: { child: null, state: 'stopped', logs: [] }
+    db: { child: null, state: 'stopped', logs: [] },
+    git_push: { child: null, state: 'stopped', logs: [] },
+    server_deploy: { child: null, state: 'stopped', logs: [] }
 };
 
 const clients = new Set();
@@ -92,7 +94,9 @@ const server = http.createServer((req, res) => {
         res.write(`event: init\ndata: ${JSON.stringify({
             server: { state: processes.server.state },
             client: { state: processes.client.state },
-            db: { state: processes.db.state }
+            db: { state: processes.db.state },
+            git_push: { state: processes.git_push.state },
+            server_deploy: { state: processes.server_deploy.state }
         })}\n\n`);
         req.on('close', () => clients.delete(res));
         return;
@@ -108,6 +112,15 @@ const server = http.createServer((req, res) => {
             if (cmdType === 'push') runCommand('db', 'npx', ['prisma', 'db', 'push'], 'server');
             if (cmdType === 'seed') runCommand('db', 'node', ['prisma/seed.js'], 'server');
             if (cmdType === 'gen') runCommand('db', 'npx', ['prisma', 'generate'], 'server');
+        }
+        else if (app === 'git_push') {
+            const gitMsg = cmdType || 'Update from Terminal';
+            const gitCmd = `git add . && git commit -m "${gitMsg}" && git push origin main`;
+            runCommand('git_push', gitCmd, [], '.');
+        }
+        else if (app === 'server_deploy') {
+            const deployCmd = `ssh -i /Users/franivan/Documents/ProyectosWeb/AbTech/ssh-key-2026-01-09.key -o StrictHostKeyChecking=no ubuntu@143.47.101.209 "cd /home/ubuntu/HotelTriz && git pull && cd client && npm run build && pm2 restart all"`;
+            runCommand('server_deploy', deployCmd, [], '.');
         }
         res.end('OK');
         return;

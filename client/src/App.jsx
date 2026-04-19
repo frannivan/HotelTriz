@@ -111,12 +111,18 @@ function App() {
 
       // Si tenemos endpoints backend especiales para admin vs public, usamos el de reservas publicas.
       // Aquí estamos llamando a roomService.createBooking que hace el POST.
-      await roomService.createBooking(payload);
+      const res = await roomService.createBooking(payload);
       
-      // En lugar de redirigir a Stripe, mostramos la pantalla de éxito directamente
-      setBookingStatus('success');
-      setLoading(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (res.url) {
+        // Redirigir a Stripe Checkout
+        window.location.href = res.url;
+      } else {
+        setBookingStatus('success');
+        setLoading(false);
+        setSelectedRoom(null);
+        setSelectedExtras([]);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } catch (err) {
       alert(err.response?.data?.error || 'Error de conexión. La habitación ya no está disponible.');
       setLoading(false);
@@ -332,6 +338,7 @@ function App() {
               allExtras={allExtras}
               searchData={search}
               onConfirm={confirmBooking}
+              onClose={() => setSelectedRoom(null)}
             />
           )}
 

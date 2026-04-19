@@ -60,3 +60,7 @@ Para los encargados de TI o el gerente general, el panel externo **HotelTriz Ter
 ---
 > [!TIP]
 > Recuerde en todo momento que *HotelTriz* es un sistema propio: cada transacción registrada bajo estado CONFIRMED que se vea en el lado de reservas implica una inyección directa del flujo de caja a sus finanzas sin comisión para agencias ni intermediarios (0% OTAs fees).
+
+contraseña de Admin: hoteltriz2026
+contraseña de Staff: hoteltriz2026
+

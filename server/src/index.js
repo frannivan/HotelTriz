@@ -16,6 +16,44 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
+
+// --- RUTA DE WEBHOOK (DEBE IR ANTES DE express.json()) ---
+// Stripe requiere el cuerpo del mensaje "en bruto" (raw) para verificar la firma.
+app.post('/api/webhooks/stripe', express.raw({type: 'application/json'}), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+  } catch (err) {
+    console.error(`❌ Error de firma en Webhook: ${err.message}`);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Manejar el evento de pago completado
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const bookingId = session.metadata.bookingId;
+
+    console.log(`💰 Pago confirmado para reserva: ${bookingId}`);
+
+    try {
+      await prisma.booking.update({
+        where: { id: bookingId },
+        data: { status: 'CONFIRMED' }
+      });
+      console.log('✅ Reserva marcada como CONFIRMED en la base de datos.');
+    } catch (dbError) {
+      console.error('❌ Error al actualizar la base de datos en webhook:', dbError);
+    }
+  }
+
+  res.json({ received: true });
+});
+
+// Middleware estándar para el resto de rutas
 app.use(express.json());
 
 // Ruta de salud
@@ -102,12 +140,54 @@ app.post('/api/bookings', async (req, res) => {
         }
       }
     });
+    // 2. Obtener detalles básicos del hotel y habitación para Stripe
+    const room = await prisma.room.findUnique({
+      where: { id: roomId },
+      include: { roomType: true }
+    });
 
-    // Desactivamos Stripe a petición del usuario. La reserva queda como PENDING para ser cobrada físicamente.
-    res.json({ message: 'Reserva creada exitosamente', booking });
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3030';
+
+    // 3. Crear Sesión de Stripe
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Reserva: ${room.roomType.name}`,
+              description: `Huésped: ${guestName} | ${checkIn} al ${checkOut}`,
+            },
+            unit_amount: Math.round(totalPrice * 100), // Stripe usa centavos
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      customer_email: guestEmail,
+      metadata: {
+        bookingId: booking.id
+      },
+      success_url: `${clientUrl}/?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
+      cancel_url: `${clientUrl}/?payment_cancelled=true`,
+    });
+
+    // 4. Guardar ID de sesión en la reserva
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { stripeSessionId: session.id }
+    });
+
+    // Enviamos la URL de redirección al cliente
+    res.json({ 
+      message: 'Checkout iniciado', 
+      url: session.url,
+      booking 
+    });
   } catch (error) {
     console.error('Booking Error:', error);
-    res.status(500).json({ error: 'Error al procesar reserva en la base de datos' });
+    res.status(500).json({ error: 'Error al procesar reserva o pago' });
   }
 });
 
@@ -116,15 +196,16 @@ app.post('/api/payments/confirm', async (req, res) => {
   const { session_id, booking_id } = req.body;
   try {
     const session = await stripe.checkout.sessions.retrieve(session_id);
-    if (session.payment_status === 'paid' || session.status === 'complete') {
+    if (session.payment_status === 'paid') {
       const updated = await prisma.booking.update({
         where: { id: booking_id },
         data: { status: 'CONFIRMED' }
       });
       return res.json({ success: true, booking: updated });
     }
-    res.status(400).json({ success: false, error: 'Pago no completado u origen desconocido' });
+    res.status(400).json({ success: false, error: 'El pago no ha sido completado' });
   } catch (error) {
+    console.error('Stripe Confirm Error:', error);
     res.status(500).json({ error: 'Error validando estado en Stripe' });
   }
 });
