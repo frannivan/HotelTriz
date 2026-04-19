@@ -61,6 +61,26 @@ Para los encargados de TI o el gerente general, el panel externo **HotelTriz Ter
 > [!TIP]
 > Recuerde en todo momento que *HotelTriz* es un sistema propio: cada transacción registrada bajo estado CONFIRMED que se vea en el lado de reservas implica una inyección directa del flujo de caja a sus finanzas sin comisión para agencias ni intermediarios (0% OTAs fees).
 
+---
+
+## 5. Pruebas de Pago (Modo Test) 💳
+
+Mientras el sistema esté en modo de prueba, puede usar las siguientes credenciales en la pasarela de Stripe para simular pagos exitosos sin cargo real:
+- **Número**: `4242 4242 4242 4242`
+- **Fecha**: Cualquier fecha futura (ej. `12/26`)
+- **CVC**: `123`
+- **Código Postal**: `12345` (o cualquiera de 5 dígitos).
+
+---
+
+## 6. Cómo Actualizar la Web de Internet (DuckDNS) 🚀
+
+Para que los cambios realizados en esta computadora se reflejen en su sitio real (`hoteltriz.duckdns.org`), siga estos 3 pasos en orden:
+
+1. **GIT PUSH**: Sube los cambios a la nube.
+2. **SERVER DEPLOY**: El servidor descarga los cambios y se reinicia solo.
+3. **SEED REMOTO (Opcional)**: Si tras actualizar ve que no hay habitaciones, presione este botón para inyectar los datos base al servidor de internet.
+
 contraseña de Admin: hoteltriz2026
 contraseña de Staff: hoteltriz2026
 

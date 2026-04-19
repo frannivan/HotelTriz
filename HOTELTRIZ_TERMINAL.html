@@ -103,6 +103,29 @@
     </div>
 </header>
 
+<!-- GUÍA DE INSTRUCCIONES -->
+<div class="grid" style="grid-template-columns: 1fr; margin-bottom: 1.5rem;">
+    <div class="card" style="border-color: var(--primary);">
+        <div class="card-header" style="background: rgba(6, 182, 212, 0.05);">
+            <div class="card-title" style="font-size: 1rem;"><i class="fa-solid fa-lightbulb"></i> GUÍA PARA ACTUALIZAR TU WEB REAL (DUCKDNS)</div>
+        </div>
+        <div style="padding: 1.2rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
+            <div>
+                <b style="color: var(--primary); display: block; margin-bottom: 0.5rem;">PASO 1: GIT PUSH</b>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Sube todos los cambios que hiciste en este Mac a GitHub. Sin esto, el servidor no verá el código nuevo.</p>
+            </div>
+            <div>
+                <b style="color: var(--primary); display: block; margin-bottom: 0.5rem;">PASO 2: SERVER DEPLOY</b>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Hace que el servidor remoto baje el código de GitHub y se reinicie para aplicar los cambios de Stripe.</p>
+            </div>
+            <div>
+                <b style="color: var(--primary); display: block; margin-bottom: 0.5rem;">PASO 3: SEED REMOTO</b>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Solo si faltan habitaciones en la web. Borra y llena la base de datos remota con los datos base.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="grid">
     <!-- BACKEND -->
     <div class="card">
@@ -145,28 +168,46 @@
     <!-- GIT SYNC -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title"><i class="fa-brands fa-github"></i> 1. Git Sync (Mac)</div>
+            <div class="card-title"><i class="fa-brands fa-github"></i> Git Sync (Hacia GitHub)</div>
             <div class="controls">
                 <button class="btn btn-run" id="run-git_push" onclick="const msg = document.getElementById('deploy-msg').value; sendCommand('run', 'git_push', msg || 'Update from Console')"><i class="fa-solid fa-arrow-up-from-bracket"></i> PUSH</button>
-                <button class="btn btn-stop" id="stop-git_push" onclick="sendCommand('stop', 'git_push')" disabled><i class="fa-solid fa-stop"></i> STOP</button>
             </div>
         </div>
         <div style="padding: 1rem; border-bottom: 1px solid var(--border);">
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem;">Paso previo obligatorio antes del Deploy:</p>
             <input type="text" id="deploy-msg" placeholder="Mensaje de commit..." style="width: 100%; background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; color: #fff; font-size: 0.8rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
         </div>
-        <div class="terminal" id="logs-git_push" style="height: 200px;"></div>
+        <div class="terminal" id="logs-git_push" style="height: 170px;"></div>
     </div>
 
-    <!-- SERVER DEPLOY -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title"><i class="fa-solid fa-cloud-arrow-up"></i> 2. Server Deploy (Ubuntu)</div>
-            <div class="controls">
-                <button class="btn btn-run" id="run-server_deploy" onclick="sendCommand('run', 'server_deploy')"><i class="fa-solid fa-rocket"></i> DEPLOY</button>
-                <button class="btn btn-stop" id="stop-server_deploy" onclick="sendCommand('stop', 'server_deploy')" disabled><i class="fa-solid fa-stop"></i> STOP</button>
+    <!-- ENTORNO REMOTO (PRODUCCIÓN) -->
+    <div class="card" style="border-color: #f59e0b; grid-column: span 2;">
+        <div class="card-header" style="background: rgba(245, 158, 11, 0.05);">
+            <div class="card-title" style="color: #f59e0b;"><i class="fa-solid fa-globe"></i> PRODUCCIÓN (hoteltriz.duckdns.org)</div>
+            <div style="font-size: 0.7rem; color: #f59e0b; font-weight: 700; border: 1px solid #f59e0b; padding: 2px 8px; border-radius: 4px;">REMOTO</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border);">
+            <div style="padding: 1.5rem; border-right: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <span style="font-weight: 700; font-size: 0.9rem;">1. Sync & Deploy</span>
+                    <div class="controls">
+                        <button class="btn btn-run" id="run-server_deploy" onclick="sendCommand('run', 'server_deploy')"><i class="fa-solid fa-rocket"></i> DEPLOY</button>
+                    </div>
+                </div>
+                <p style="font-size: 0.7rem; color: var(--text-muted);">Sincroniza el servidor con los últimos cambios de GitHub y reinicia PM2.</p>
+                <div class="terminal" id="logs-server_deploy" style="height: 150px; margin-top: 1rem;"></div>
+            </div>
+            <div style="padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <span style="font-weight: 700; font-size: 0.9rem;">2. Base de Datos Remota</span>
+                    <div class="controls">
+                        <button class="btn btn-run" id="run-remote_seed" onclick="sendCommand('run', 'remote_seed')" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.2);"><i class="fa-solid fa-seedling"></i> SEED REMOTO</button>
+                    </div>
+                </div>
+                <p style="font-size: 0.7rem; color: var(--text-muted);">Ejecuta 'db push' y 'seed' en el servidor remoto de DuckDNS.</p>
+                <div class="terminal" id="logs-remote_seed" style="height: 150px; margin-top: 1rem;"></div>
             </div>
         </div>
-        <div class="terminal" id="logs-server_deploy" style="height: 257px;"></div>
     </div>
 </div>
 

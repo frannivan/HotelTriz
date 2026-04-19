@@ -130,6 +130,10 @@ const server = http.createServer((req, res) => {
             const deployCmd = `ssh -i /Users/franivan/Documents/ProyectosWeb/AbTech/ssh-key-2026-01-09.key -o StrictHostKeyChecking=no ubuntu@143.47.101.209 "cd /home/ubuntu/HotelTriz && git pull && cd client && npm run build && pm2 restart all"`;
             runCommand('server_deploy', deployCmd, [], '.');
         }
+        else if (app === 'remote_seed') {
+            const seedCmd = `ssh -i /Users/franivan/Documents/ProyectosWeb/AbTech/ssh-key-2026-01-09.key -o StrictHostKeyChecking=no ubuntu@143.47.101.209 "cd /home/ubuntu/HotelTriz/server && npx prisma db push && node prisma/seed.js"`;
+            runCommand('remote_seed', seedCmd, [], '.');
+        }
         res.end('OK');
         return;
     }
