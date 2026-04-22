@@ -138,7 +138,7 @@ const server = http.createServer((req, res) => {
             runCommand('git_force', forceCmd, [], '.');
         }
         else if (app === 'server_deploy') {
-            const deployCmd = `ssh -i /Users/franivan/Documents/ProyectosWeb/AbTech/ssh-key-2026-01-09.key -o StrictHostKeyChecking=no ubuntu@143.47.101.209 "cd /home/ubuntu/HotelTriz && git pull && cd server && npm install && npx prisma generate && cd ../client && npm install && npm run build && pm2 restart all"`;
+            const deployCmd = `ssh -i /Users/franivan/Documents/ProyectosWeb/AbTech/ssh-key-2026-01-09.key -o StrictHostKeyChecking=no ubuntu@143.47.101.209 "cd /home/ubuntu/HotelTriz && git pull && cd server && npm install && npm run deploy && cd ../client && npm install && npm run build && pm2 restart all"`;
             runCommand('server_deploy', deployCmd, [], '.');
         }
         else if (app === 'remote_seed') {

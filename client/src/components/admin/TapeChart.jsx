@@ -534,41 +534,49 @@ const TapeChart = ({ onOpenBookingModal }) => {
                     
                     {/* Booking Blocks */}
                     {roomBookings.map(booking => {
-                      const checkIn = new Date(booking.checkIn);
-                      checkIn.setHours(0,0,0,0);
-                      const checkOut = new Date(booking.checkOut);
-                      checkOut.setHours(0,0,0,0);
-                      const startRange = dates[0];
-                      startRange.setHours(0,0,0,0);
-                      const endRange = dates[dates.length - 1];
-                      endRange.setHours(0,0,0,0);
-
-                      // Skip if completely out of bounds
-                      if (checkOut < startRange || checkIn > endRange) return null;
-
-                      // Calculate Box Position
+                      // Calculate Box Position (v13 - Solid Handover)
+                      
+                      // Calculate Box Position (v13 - Solid Handover)
                       const msPerDay = 1000 * 60 * 60 * 24;
+                      const gridStart = dates[0].getTime();
+                      const gridEnd = dates[dates.length - 1].getTime() + msPerDay;
                       
-                      // Limitar visualmente a nuestra grilla
-                      const visibleStart = checkIn < startRange ? startRange : checkIn;
-                      const visibleEnd = checkOut > endRange ? endRange : checkOut;
+                      const bStart = new Date(booking.checkIn);
+                      bStart.setHours(0, 0, 0, 0);
+                      const bEnd = new Date(booking.checkOut);
+                      bEnd.setHours(23, 59, 59, 999);
 
-                      const startOffsetDays = Math.round((visibleStart - startRange) / msPerDay);
-                      const durationDays = Math.round((visibleEnd - visibleStart) / msPerDay);
-                      
-                      const leftPercent = (startOffsetDays / dates.length) * 100;
-                      const widthPercent = (durationDays / dates.length) * 100;
+                      const bStartMs = bStart.getTime();
+                      const bEndMs = bEnd.getTime();
 
-                      let colorClass = 'bg-[#111]';
-                      if (booking.source !== 'LOCAL') colorClass = 'bg-[#C5A059]'; // OTAs (Airbnb/Booking)
-                      if (booking.status === 'PENDING') colorClass = 'bg-amber-400';
+                      // Clip to visible range
+                      const visibleStart = Math.max(bStartMs, gridStart);
+                      const visibleEnd = Math.min(bEndMs, gridEnd);
+
+                      if (visibleStart >= visibleEnd) return null;
+
+                      const totalGridDuration = gridEnd - gridStart;
+                      const leftPercent = ((visibleStart - gridStart) / totalGridDuration) * 100;
+                      const widthPercent = ((visibleEnd - visibleStart) / totalGridDuration) * 100;
+
+                      // Determinar si es Check-in o Check-out dentro del rango visual para ajustar altura
+                      const isCheckInDay = (date) => new Date(booking.checkIn).toDateString() === date.toDateString();
+                      const isCheckOutDay = (date) => new Date(booking.checkOut).toDateString() === date.toDateString();
+
+                      // Ajuste visual para evitar solapamientos en días de cambio
+                      // Si la reserva empieza hoy en esta vista -> abajo
+                      // Si la reserva termina hoy en esta vista -> arriba
+                      const startsToday = bStartMs >= gridStart && bStartMs < (gridStart + msPerDay);
+                      const endsToday = bEndMs > (gridEnd - msPerDay) && bEndMs <= gridEnd;
+
+                      const colorClass = booking.source !== 'LOCAL' ? 'bg-[#C5A059]' : (booking.status === 'PENDING' ? 'bg-amber-400' : 'bg-[#111]');
 
                       return (
                         <div 
                           key={booking.id}
                           draggable={!isResizing}
                           onDragStart={(e) => handleDragStart(e, booking)}
-                                       onClick={() => {
+                          onClick={() => {
                             if (!booking) return;
                             setSelectedBooking({ ...booking, roomNumber: room?.number });
                             setEditFormData({
@@ -578,8 +586,13 @@ const TapeChart = ({ onOpenBookingModal }) => {
                             });
                             setIsEditing(false); 
                           }}
-                          className={`absolute top-1 bottom-1 rounded-md z-10 flex items-center px-2 text-[9px] font-bold text-white shadow-sm overflow-hidden backdrop-blur-sm cursor-pointer hover:scale-[1.01] transition-all group/booking ${colorClass}`}
-                          style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+                          className={`absolute z-10 flex items-center px-2 text-[9px] font-bold text-white shadow-md overflow-hidden cursor-pointer hover:scale-[1.01] transition-all group/booking ${colorClass} rounded-md border border-white/20 opacity-90`}
+                          style={{ 
+                            left: `${leftPercent}%`, 
+                            width: `${widthPercent}%`,
+                            top: '4px',
+                            bottom: '4px'
+                          }}
                           title={`${booking.guestName} (${booking.source})`}
                         >
                           <span className="truncate flex-1">{booking.guestName || booking.source}</span>

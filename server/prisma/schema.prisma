@@ -24,7 +24,7 @@ model Hotel {
 
 model RoomType {
   id          String   @id @default(cuid())
-  name        String   // e.g., Suite, Standard
+  name        String   @unique // e.g., Suite, Standard
   description String?
   basePrice   Float
   capacity    Int
@@ -35,7 +35,7 @@ model RoomType {
 
 model Room {
   id                 String   @id @default(cuid())
-  number             String
+  number             String   @unique
   floor              Int?
   status             String   @default("AVAILABLE") // AVAILABLE, MAINTENANCE
   housekeepingStatus String   @default("CLEAN") // CLEAN, DIRTY, IN_SERVICE
@@ -46,7 +46,7 @@ model Room {
 
 model ExtraService {
   id          String    @id @default(cuid())
-  name        String
+  name        String   @unique
   description String?
   price       Float
   hotelId     String

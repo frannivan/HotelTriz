@@ -23,9 +23,11 @@ async function main() {
     console.log('✅ Hotel base creado.');
   }
 
-  // 2. Crear Tipos de Habitación
-  const standard = await prisma.roomType.create({
-    data: {
+  // 2. Crear Tipos de Habitación (Upsert)
+  const standard = await prisma.roomType.upsert({
+    where: { name: 'Standard Room' },
+    update: {},
+    create: {
       name: 'Standard Room',
       description: 'Habitación cómoda con vista a la ciudad.',
       basePrice: 120.0,
@@ -34,8 +36,10 @@ async function main() {
     }
   });
 
-  const suite = await prisma.roomType.create({
-    data: {
+  const suite = await prisma.roomType.upsert({
+    where: { name: 'Luxury Suite' },
+    update: {},
+    create: {
       name: 'Luxury Suite',
       description: 'Suite amplia con jacuzzi y balcón.',
       basePrice: 250.0,
@@ -43,62 +47,79 @@ async function main() {
       hotelId: hotel.id
     }
   });
-  console.log('✅ Tipos de Habitación creados.');
+  console.log('✅ Tipos de Habitación asegurados.');
 
-  // 3. Crear Habitaciones Físicas (Inventario)
-  const roomPromises = [];
+  // 3. Crear Habitaciones Físicas (Upsert)
   for (let i = 1; i <= 5; i++) {
-    roomPromises.push(prisma.room.create({ data: { number: `10${i}`, floor: 1, roomTypeId: standard.id } }));
+    const num = `10${i}`;
+    await prisma.room.upsert({
+      where: { number: num },
+      update: { roomTypeId: standard.id },
+      create: { number: num, floor: 1, roomTypeId: standard.id }
+    });
   }
   for (let i = 1; i <= 3; i++) {
-    roomPromises.push(prisma.room.create({ data: { number: `20${i}`, floor: 2, roomTypeId: suite.id } }));
+    const num = `20${i}`;
+    await prisma.room.upsert({
+      where: { number: num },
+      update: { roomTypeId: suite.id },
+      create: { number: num, floor: 2, roomTypeId: suite.id }
+    });
   }
-  const allRooms = await Promise.all(roomPromises);
-  console.log('✅ Habitaciones físicas creadas.');
+  const allRooms = await prisma.room.findMany();
+  console.log('✅ Habitaciones físicas aseguradas.');
 
-  // 4. Crear Servicios Extra
+  // 4. Crear Servicios Extra (Upsert)
   const extrasData = [
     { name: 'Desayuno Buffet Premium', description: 'Variedad de frutas frescas y platos calientes.', price: 25.0, hotelId: hotel.id },
     { name: 'Acceso al Spa & Sauna', description: 'Relájate en nuestras instalaciones.', price: 45.0, hotelId: hotel.id }
   ];
   
   for (const extra of extrasData) {
-    await prisma.extraService.create({ data: extra });
+    await prisma.extraService.upsert({
+      where: { name: extra.name },
+      update: { price: extra.price },
+      create: extra
+    });
   }
-  console.log('✅ Servicios Extra creados.');
+  console.log('✅ Servicios Extra asegurados.');
 
-  // 5. Crear algunas reservas de prueba para encender el Calendario
-  const today = new Date();
-  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-  const nextWeek = new Date(today); nextWeek.setDate(today.getDate() + 7);
-  
-  await prisma.booking.create({
-    data: {
-      guestName: 'Francisco Ivan',
-      guestEmail: 'demo@hoteltriz.com',
-      checkIn: today,
-      checkOut: tomorrow,
-      totalPrice: 120.0,
-      status: 'CONFIRMED',
-      source: 'LOCAL',
-      roomId: allRooms[0].id
-    }
-  });
-  
-  await prisma.booking.create({
-    data: {
-      guestName: 'Huésped Airbnb',
-      guestEmail: 'airbnb@sync.com',
-      checkIn: today,
-      checkOut: nextWeek,
-      totalPrice: 0,
-      status: 'CONFIRMED',
-      source: 'AIRBNB',
-      roomId: allRooms[allRooms.length - 1].id
-    }
-  });
+  // 5. Crear reservas de prueba (Solo si no hay reservas)
+  const bookingCount = await prisma.booking.count();
+  if (bookingCount === 0) {
+    const today = new Date();
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    const nextWeek = new Date(today); nextWeek.setDate(today.getDate() + 7);
+    
+    await prisma.booking.create({
+      data: {
+        guestName: 'Francisco Ivan',
+        guestEmail: 'demo@hoteltriz.com',
+        checkIn: today,
+        checkOut: tomorrow,
+        totalPrice: 120.0,
+        status: 'CONFIRMED',
+        source: 'LOCAL',
+        roomId: allRooms[0].id
+      }
+    });
+    
+    await prisma.booking.create({
+      data: {
+        guestName: 'Huésped Airbnb',
+        guestEmail: 'airbnb@sync.com',
+        checkIn: today,
+        checkOut: nextWeek,
+        totalPrice: 0,
+        status: 'CONFIRMED',
+        source: 'AIRBNB',
+        roomId: allRooms[allRooms.length - 1].id
+      }
+    });
+    console.log('✅ Reservas Demo inyectadas.');
+  }
 
-  // 6. Crear Motivos de Cancelación
+  // 6. Crear Motivos de Cancelación (Ya usaba upsert)
   const reasons = [
     'No Show (No se presentó)',
     'Cambio de planes del huésped',
@@ -116,9 +137,9 @@ async function main() {
       create: { id: name.substring(0, 5), name }
     });
   }
-  console.log('✅ Motivos de Cancelación creados.');
+  console.log('✅ Motivos de Cancelación asegurados.');
 
-  console.log('✅ Reservas Demo inyectadas con éxito.');
+  console.log('🎉 BASE DE DATOS SINCRONIZADA Y PROTEGIDA');
   console.log('🎉 BASE DE DATOS LISTA PARA PRODUCCIÓN');
 }
 

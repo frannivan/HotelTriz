@@ -209,8 +209,8 @@
                     </div>
                 </div>
                 <div class="terminal" id="logs-git_push" style="height: 140px;"></div>
-                <div class="terminal" id="logs-git_status" style="display: none;"></div>
-                <div class="terminal" id="logs-git_force" style="display: none;"></div>
+                <div class="terminal" id="logs-git_status" style="height: 140px; display: none;"></div>
+                <div class="terminal" id="logs-git_force" style="height: 140px; display: none;"></div>
             </div>
         </div>
     </div>
@@ -274,6 +274,21 @@
     let eventSource = null;
 
     function sendCommand(path, app, cmdType) {
+        // Auto-revelar el terminal de logs si estaba oculto (especialmente para Git)
+        const logDiv = document.getElementById(`logs-${app}`);
+        if (logDiv) {
+            logDiv.style.display = 'block';
+            // Si es un log de Git, ocultamos los otros del grupo para no saturar
+            if (app.startsWith('git_')) {
+                ['git_push', 'git_status', 'git_force'].forEach(id => {
+                    if (id !== app) {
+                        const other = document.getElementById(`logs-${id}`);
+                        if (other) other.style.display = 'none';
+                    }
+                });
+            }
+        }
+
         let url = `${BRIDGE_URL}/${path}?app=${encodeURIComponent(app)}`;
         if(cmdType) url += `&cmd=${encodeURIComponent(cmdType)}`;
         fetch(url).catch(() => console.error('Error enviando comando'));

@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/index.js",
+    "db:clean": "node src/scripts/consolidate.js",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:setup": "npm run db:clean && prisma migrate dev && npm run db:seed",
+    "deploy": "npx prisma generate && npm run db:clean && npm run db:migrate && npm run db:seed"
   },
   "keywords": [],
   "author": "",
