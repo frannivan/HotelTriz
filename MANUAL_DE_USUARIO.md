@@ -55,6 +55,21 @@ Esta es la función más poderosa de HotelTriz. Permite que el inventario del ho
 Para los encargados de TI o el gerente general, el panel externo **HotelTriz Terminal** funge como la llave de encendido general.
 
 - **START BOTH (Recomendado)**: Un clic levanta simultáneamente la Base de Datos con el Servidor Backend, y acto seguido la Interfaz Visual Moderna (React). Espere unos segundos de preparación.
+
+### 4.1 Cómo correr el sistema en tu Mac (Paso a Paso) 🍎
+
+Para encender el hotel en tu computadora, sigue estos pasos:
+
+1.  **Enciende el Puente**: Abre una terminal en tu Mac y ejecuta:
+    ```bash
+    node /Users/franivan/Documents/ProyectosWeb/HotelTriz/terminal-bridge.js
+    ```
+2.  **Abre la Consola**: Abre el archivo `HOTELTRIZ_TERMINAL.html` en tu navegador Chrome.
+3.  **Inicia todo**: Haz clic en el botón azul de **"START BOTH"**.
+
+> [!NOTE]
+> Una vez que veas los cuadros de "Server" y "Client" en verde, podrás entrar a tu hotel privado en la dirección: `http://localhost:3030`
+
 - **Bases de Datos locales**: La información viaja velozmente porque el motor base es local (`dev.db`). No requiere internet para despachar a sistemas adyacentes o probar el front. 
 
 ---
@@ -71,6 +86,17 @@ Mientras el sistema esté en modo de prueba, puede usar las siguientes credencia
 - **CVC**: `123`
 - **Código Postal**: `12345` (o cualquiera de 5 dígitos).
 
+### 5.1 Pruebas en Ambiente Local (Mac)
+Gracias al sistema de **Redirección Dinámica**, puedes probar reservas directamente desde `localhost:3030`. Stripe te devolverá automáticamente a tu sitio local.
+
+Para que las reservas se marquen como **CONFIRMED** automáticamente en tu Mac (usando Webhooks), sigue estos pasos:
+1. Instala la **Stripe CLI**.
+2. Abre una terminal normal y ejecuta:
+   ```bash
+   stripe listen --forward-to localhost:3001/api/webhooks/stripe
+   ```
+3. Copia el `Webhook Signing Secret` (empieza por `whsec_`) que te dará la terminal y ponlo temporalmente en tu archivo `.env` local.
+
 ---
 
 ## 6. Cómo Actualizar la Web de Internet (DuckDNS) 🚀
@@ -80,7 +106,29 @@ Para que los cambios realizados en esta computadora se reflejen en su sitio real
 1. **GIT PUSH**: Sube los cambios a la nube.
 2. **SERVER DEPLOY**: El servidor descarga los cambios y se reinicia solo.
 3. **SEED REMOTO (Opcional)**: Si tras actualizar ve que no hay habitaciones, presione este botón para inyectar los datos base al servidor de internet.
+---
 
-contraseña de Admin: hoteltriz2026
-contraseña de Staff: hoteltriz2026
+## 7. Credenciales de Acceso 🔐
 
+Para las secciones protegidas del sistema, utilice las siguientes claves:
+
+| Perfil | Contraseña |
+| :--- | :--- |
+| **Administrador** | `hoteltriz2026` |
+| **Personal (Staff)** | `hoteltriz2026` |
+
+> [!TIP]
+> En el ambiente local, estas contraseñas ya vienen pre-llenadas para su comodidad.
+
+### 4.2 Guía Rápida de Botones (Base de Datos Local) 🗄️
+
+Si necesitas realizar mantenimiento técnico en tu Mac usando la sección **Database**, aquí tienes el resumen de cuándo usar cada botón:
+
+| Botón | ¿Qué hace en tu Mac? | ¿Cuándo usarlo? |
+| :--- | :--- | :--- |
+| **DB PUSH** | "Construye" las tablas de datos. | Si la IA cambia la estructura del sistema. |
+| **SEED LOCAL** | "Amuebla" el hotel con datos base. | Si la web se ve vacía o sin habitaciones. |
+| **GENERATE** | "Enseña" al servidor las tablas. | Siempre después de un **DB PUSH**. |
+| **CLEAR LOGS** | Limpia el historial visual. | Si quieres ver los logs actuales sin ruido. |
+
+---

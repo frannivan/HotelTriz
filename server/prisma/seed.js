@@ -98,6 +98,26 @@ async function main() {
     }
   });
 
+  // 6. Crear Motivos de Cancelación
+  const reasons = [
+    'No Show (No se presentó)',
+    'Cambio de planes del huésped',
+    'Error en la fecha/habitación',
+    'Emergencia personal',
+    'Encontró un precio mejor',
+    'Desea cambiar de hotel',
+    'Otro motivo (Ver detalles)'
+  ];
+
+  for (const name of reasons) {
+    await prisma.cancellationReason.upsert({
+      where: { id: name.substring(0, 5) }, 
+      update: { name },
+      create: { id: name.substring(0, 5), name }
+    });
+  }
+  console.log('✅ Motivos de Cancelación creados.');
+
   console.log('✅ Reservas Demo inyectadas con éxito.');
   console.log('🎉 BASE DE DATOS LISTA PARA PRODUCCIÓN');
 }

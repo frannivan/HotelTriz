@@ -13,7 +13,7 @@ const adapter = new PrismaLibSql({
 const prisma = new PrismaClient({ adapter });
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 app.use(cors());
 
@@ -55,6 +55,162 @@ app.post('/api/webhooks/stripe', express.raw({type: 'application/json'}), async 
 
 // Middleware estándar para el resto de rutas
 app.use(express.json());
+
+// Logger de Tráfico (DEPURACIÓN MASTER)
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/admin/bookings')) {
+    console.log(`📡 [ADMIN_PROBE] ${req.method} ${req.url}`);
+  } else {
+    console.log(`📡 [TRAFFIC] ${req.method} ${req.url}`);
+  }
+  next();
+});
+
+// ==========================================
+// RUTAS ADMINISTRATIVAS DE ALTA PRIORIDAD
+// ==========================================
+
+// Atrapa-Todo para Diagnóstico
+app.use('/api/admin/bookings/:id', (req, res, next) => {
+  console.log(`🔍 [PROBE] Petición detectada para reserva ${req.params.id} -> Procediendo a buscar ruta...`);
+  next();
+});
+
+// Motivos de Cancelación (ALTA PRIORIDAD)
+app.get('/api/admin/cancellation-reasons', async (req, res) => {
+  try {
+    const reasons = await prisma.cancellationReason.findMany();
+    res.json(reasons);
+  } catch (error) {
+    console.warn('⚠️ [BACKEND] DB Error en motivos. Sirviendo motivos de emergencia.');
+    // Motivos de emergencia para que la UI nunca esté vacía
+    res.json([
+      { id: 'err_reserva', name: 'Error en la reserva' },
+      { id: 'cambio_planes', name: 'Cambio de planes' },
+      { id: 'no_show', name: 'No se presentó (No-Show)' },
+      { id: 'otro', name: 'Otro motivo' }
+    ]);
+  }
+});
+
+// Cobrar y Confirmar Reserva Manual
+app.patch('/api/admin/bookings/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  try {
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: { status }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al cambiar estatus' });
+  }
+});
+
+// Modificar Reserva (Drag & Drop o Manual)
+app.patch('/api/admin/bookings/:id/update-pos', async (req, res) => {
+  const { id } = req.params;
+  const { roomId, checkIn, checkOut } = req.body;
+  
+  console.log(`[DEBUG] Petición PATCH recibida para ID: ${id}`);
+  console.log(`[DEBUG] Datos:`, req.body);
+
+  try {
+    const cIn = new Date(checkIn);
+    const cOut = new Date(checkOut);
+
+    // 1. Verificar colisiones (excluyendo la propia reserva)
+    const conflicts = await prisma.booking.findMany({
+      where: {
+        roomId,
+        id: { not: id },
+        status: { not: 'CANCELLED' },
+        AND: [
+          { checkIn: { lt: cOut } },
+          { checkOut: { gt: cIn } }
+        ]
+      }
+    });
+
+    if (conflicts.length > 0) {
+      return res.status(409).json({ error: 'Choque de fechas: Este espacio ya está ocupado.' });
+    }
+
+    // 2. Calcular diferencia de precio (basado en precio base del RoomType)
+    const currentBooking = await prisma.booking.findUnique({ 
+      where: { id },
+      include: { room: { include: { roomType: true } } }
+    });
+    
+    if (!currentBooking) {
+      return res.status(404).json({ error: 'Reserva no encontrada' });
+    }
+
+    const targetRoom = await prisma.room.findUnique({
+      where: { id: roomId },
+      include: { roomType: true }
+    });
+
+    if (!targetRoom) {
+      return res.status(404).json({ error: 'Habitación de destino no encontrada' });
+    }
+
+    // Asegurar que tenemos precio base
+    const basePrice = targetRoom.roomType?.basePrice || 0;
+    const days = Math.ceil((cOut - cIn) / (1000 * 60 * 60 * 24));
+    if (days <= 0) {
+      return res.status(400).json({ error: 'Las fechas seleccionadas no son válidas' });
+    }
+
+    const newTotal = basePrice * days;
+    const priceDiff = newTotal - currentBooking.totalPrice;
+
+    // 3. Ejecutar actualización
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: { 
+        roomId, 
+        checkIn: cIn, 
+        checkOut: cOut,
+        totalPrice: newTotal
+      }
+    });
+
+    res.json({ 
+      message: 'Reserva movida con éxito', 
+      booking: updated,
+      priceDiff 
+    });
+  } catch (error) {
+    console.error('Update Booking Error:', error);
+    res.status(400).json({ error: error.message || 'Error al procesar el cambio en la reserva' });
+  }
+});
+
+// Cancelar con Motivo
+app.post('/api/admin/bookings/:id/cancel', async (req, res) => {
+  const { id } = req.params;
+  const { reasonId, details } = req.body;
+  
+  try {
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: { 
+        status: 'CANCELLED',
+        cancellationReasonId: reasonId,
+        cancellationDetails: details
+      }
+    });
+    res.json({ message: 'Reserva cancelada correctamente', booking: updated });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al cancelar reserva' });
+  }
+});
+
+// ==========================================
+// FIN RUTAS ADMINISTRATIVAS
+// ==========================================
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {
@@ -109,6 +265,8 @@ app.post('/api/availability', async (req, res) => {
   }
 });
 
+// Obtener motivos de cancelación
+
 // Obtener servicios extra
 app.get('/api/extra-services', async (req, res) => {
   try {
@@ -146,7 +304,7 @@ app.post('/api/bookings', async (req, res) => {
       include: { roomType: true }
     });
 
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3030';
+    const clientUrl = req.headers.origin || process.env.CLIENT_URL || 'http://localhost:3030';
 
     // 3. Crear Sesión de Stripe
     const session = await stripe.checkout.sessions.create({
@@ -418,20 +576,7 @@ app.post('/api/admin/bookings/new', async (req, res) => {
   }
 });
 
-// Cobrar y Confirmar Reserva Manual
-app.patch('/api/admin/bookings/:id/status', async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  try {
-    const updated = await prisma.booking.update({
-      where: { id },
-      data: { status }
-    });
-    res.json(updated);
-  } catch (error) {
-    res.status(500).json({ error: 'Error al cambiar estatus' });
-  }
-});
+// (Rutas movidas al inicio para prioridad)
 
 // === FASE 4: SINCRONIZACIÓN ICAL (PUENTE) ===
 

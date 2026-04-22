@@ -6,12 +6,32 @@ import HousekeepingPanel from './HousekeepingPanel';
 import ManualBookingModal from './ManualBookingModal';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('bookings'); 
+  // Inicialización inteligente desde el Hash para evitar saltos al refrescar
+  const getInitialTab = () => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#/admin/')) {
+      const tab = hash.replace('#/admin/', '');
+      if (['bookings', 'calendar', 'housekeeping', 'sync'].includes(tab)) {
+        return tab;
+      }
+    }
+    return 'bookings';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab); 
   const [stats, setStats] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [allRooms, setAllRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalInitialData, setModalInitialData] = useState(null);
+
+  // Actualizar Hash cuando cambia la pestaña (Solo si es un cambio manual)
+  useEffect(() => {
+    if (window.location.hash !== `#/admin/${activeTab}`) {
+      window.location.hash = `#/admin/${activeTab}`;
+    }
+  }, [activeTab]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -85,7 +105,7 @@ const AdminDashboard = () => {
           </div>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => setIsModalOpen(true)} className="px-5 py-2.5 bg-[#111] text-white rounded-lg hover:bg-[#C5A059] transition-colors text-[11px] font-semibold tracking-wider uppercase shadow-sm">
+          <button onClick={() => { setModalInitialData(null); setIsModalOpen(true); }} className="px-5 py-2.5 bg-[#111] text-white rounded-lg hover:bg-[#C5A059] transition-colors text-[11px] font-semibold tracking-wider uppercase shadow-sm">
             <i className="fa-solid fa-plus mr-2"></i>Nueva Reserva
           </button>
           <button onClick={fetchData} className="px-5 py-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-[11px] font-semibold tracking-wider text-[#111] uppercase shadow-sm">
@@ -190,7 +210,12 @@ const AdminDashboard = () => {
       )}
 
       {activeTab === 'calendar' && (
-        <TapeChart />
+        <TapeChart 
+          onOpenBookingModal={(data) => {
+            setModalInitialData(data);
+            setIsModalOpen(true);
+          }}
+        />
       )}
 
       {activeTab === 'housekeeping' && (
@@ -201,7 +226,8 @@ const AdminDashboard = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         allRooms={allRooms} 
-        onSuccess={() => { setIsModalOpen(false); fetchData(); }} 
+        initialData={modalInitialData}
+        onSuccess={() => { setIsModalOpen(false); fetchData(); window.dispatchEvent(new CustomEvent('refresh-calendar')); }} 
       />
     </div>
   );

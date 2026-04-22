@@ -91,6 +91,23 @@ export const roomService = {
   triggerSync: async () => {
     const response = await api.post('/admin/sync/trigger');
     return response.data;
+  },
+  // Nuevos Métodos para Gestión de Reservas
+  getCancellationReasons: async () => {
+    const response = await api.get('/admin/cancellation-reasons');
+    return response.data;
+  },
+  updateBookingPos: async (id, data) => {
+    const response = await api.patch(`/admin/bookings/${id}/update-pos`, data);
+    return response.data;
+  },
+  cancelBooking: async (id, data) => {
+    const response = await api.post(`/admin/bookings/${id}/cancel`, data);
+    return response.data;
+  },
+  updateBookingStatus: async (id, status) => {
+    const response = await api.patch(`/admin/bookings/${id}/status`, { status });
+    return response.data;
   }
 };
 

@@ -13,7 +13,10 @@ const processes = {
     client: { child: null, state: 'stopped', logs: [] },
     db: { child: null, state: 'stopped', logs: [] },
     git_push: { child: null, state: 'stopped', logs: [] },
-    server_deploy: { child: null, state: 'stopped', logs: [] }
+    git_status: { child: null, state: 'stopped', logs: [] },
+    git_force: { child: null, state: 'stopped', logs: [] },
+    server_deploy: { child: null, state: 'stopped', logs: [] },
+    remote_seed: { child: null, state: 'stopped', logs: [] }
 };
 
 const clients = new Set();
@@ -99,13 +102,14 @@ const server = http.createServer((req, res) => {
         res.setHeader('Connection', 'keep-alive');
         res.write('\n');
         clients.add(res);
-        res.write(`event: init\ndata: ${JSON.stringify({
-            server: { state: processes.server.state },
-            client: { state: processes.client.state },
-            db: { state: processes.db.state },
-            git_push: { state: processes.git_push.state },
-            server_deploy: { state: processes.server_deploy.state }
-        })}\n\n`);
+        const initialState = {};
+        for (const app in processes) {
+            initialState[app] = {
+                state: processes[app].state,
+                logs: processes[app].logs
+            };
+        }
+        res.write(`event: init\ndata: ${JSON.stringify(initialState)}\n\n`);
         req.on('close', () => clients.delete(res));
         return;
     }
@@ -126,12 +130,20 @@ const server = http.createServer((req, res) => {
             const gitCmd = `git add . && git commit -m "${gitMsg}" && git push origin main`;
             runCommand('git_push', gitCmd, [], '.');
         }
+        else if (app === 'git_status') {
+            runCommand('git_status', 'git', ['status'], '.');
+        }
+        else if (app === 'git_force') {
+            const forceCmd = `git add . && git commit -m "Emergency Force Fix" && git push origin main --force`;
+            runCommand('git_force', forceCmd, [], '.');
+        }
         else if (app === 'server_deploy') {
-            const deployCmd = `ssh -i /Users/franivan/Documents/ProyectosWeb/AbTech/ssh-key-2026-01-09.key -o StrictHostKeyChecking=no ubuntu@143.47.101.209 "cd /home/ubuntu/HotelTriz && git pull && cd client && npm run build && pm2 restart all"`;
+            const deployCmd = `ssh -i /Users/franivan/Documents/ProyectosWeb/AbTech/ssh-key-2026-01-09.key -o StrictHostKeyChecking=no ubuntu@143.47.101.209 "cd /home/ubuntu/HotelTriz && git pull && cd server && npm install && npx prisma generate && cd ../client && npm install && npm run build && pm2 restart all"`;
             runCommand('server_deploy', deployCmd, [], '.');
         }
         else if (app === 'remote_seed') {
-            const seedCmd = `ssh -i /Users/franivan/Documents/ProyectosWeb/AbTech/ssh-key-2026-01-09.key -o StrictHostKeyChecking=no ubuntu@143.47.101.209 "cd /home/ubuntu/HotelTriz/server && npx prisma db push && node prisma/seed.js"`;
+            const remoteDbUrl = "file:/home/ubuntu/HotelTriz/server/prisma/dev.db";
+            const seedCmd = `ssh -i /Users/franivan/Documents/ProyectosWeb/AbTech/ssh-key-2026-01-09.key -o StrictHostKeyChecking=no ubuntu@143.47.101.209 "cd /home/ubuntu/HotelTriz/server && DATABASE_URL='${remoteDbUrl}' npx prisma db push && DATABASE_URL='${remoteDbUrl}' node prisma/seed.js"`;
             runCommand('remote_seed', seedCmd, [], '.');
         }
         res.end('OK');

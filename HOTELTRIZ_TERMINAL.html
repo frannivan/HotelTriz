@@ -61,7 +61,7 @@
         .btn-stop:hover:not(:disabled) { background: var(--danger); color: #fff; }
         .btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        .terminal { background: #000; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; height: 300px; overflow-y: auto; color: #a1a1aa; border-top: 1px solid var(--border); }
+        .terminal { background: #000; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; height: 250px; overflow-y: auto; color: #a1a1aa; border-top: 1px solid var(--border); }
         .log-line { margin-bottom: 0.2rem; display: flex; gap: 0.8rem; border-left: 2px solid var(--border); padding-left: 0.8rem; }
         .log-time { color: #444; flex-shrink: 0; }
         .log-content { word-break: break-all; }
@@ -69,9 +69,22 @@
         .log-content.success { color: var(--accent); font-weight: bold; }
         .log-content.info { color: var(--primary); }
 
-        .db-controls { padding: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
-        .btn-db { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border); }
+        .db-controls { padding: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+        .db-btn-wrapper { display: flex; flex-direction: column; gap: 0.4rem; }
+        .btn-db { padding: 0.6rem; background: rgba(255,255,255,0.03); color: #fff; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; font-weight: 600; width: 100%; }
         .btn-db:hover { background: var(--primary); color: #000; border-color: var(--primary); }
+        .db-hint { font-size: 0.65rem; color: var(--text-muted); line-height: 1.2; padding: 0 0.2rem; }
+
+        .section-wrapper { margin: 0 auto 1.5rem; max-width: 1200px; border-radius: 32px; border: 1px solid var(--border); background: rgba(255,255,255,0.02); overflow: hidden; }
+        .section-header { padding: 1.2rem 2rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; transition: background 0.2s; }
+        .section-header:hover { background: rgba(255,255,255,0.05); }
+        .section-title { font-size: 0.9rem; letter-spacing: 2px; font-weight: 800; display: flex; align-items: center; gap: 1rem; }
+        .section-content { padding: 1.5rem; border-top: 1px solid var(--border); display: block; animation: slideDown 0.3s ease-out; }
+        .section-content.hidden { display: none; }
+        .section-icon { transition: transform 0.3s; color: var(--text-muted); }
+        .section-wrapper.open .section-icon { transform: rotate(180deg); color: var(--primary); }
+
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         #warning-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); display: none; place-items: center; z-index: 100; text-align: center; }
         .warning-box { background: #111; padding: 3rem; border-radius: 32px; border: 1px solid var(--danger); max-width: 500px; }
@@ -103,109 +116,154 @@
     </div>
 </header>
 
-<!-- GUÍA DE INSTRUCCIONES -->
-<div class="grid" style="grid-template-columns: 1fr; margin-bottom: 1.5rem;">
-    <div class="card" style="border-color: var(--primary);">
-        <div class="card-header" style="background: rgba(6, 182, 212, 0.05);">
-            <div class="card-title" style="font-size: 1rem;"><i class="fa-solid fa-lightbulb"></i> GUÍA PARA ACTUALIZAR TU WEB REAL (DUCKDNS)</div>
+<!-- LAS INSTRUCCIONES SE MOVIERON ADENTRO DE CADA SECCIÓN PARA EVITAR CONFUSIÓN -->
+
+<!-- SECCIÓN LOCAL -->
+<div class="section-wrapper open" id="section-local">
+    <div class="section-header" onclick="toggleSection('local')">
+        <div class="section-title" style="color: var(--primary);"><i class="fa-solid fa-laptop-code"></i> AMBIENTE LOCAL (DESARROLLO)</div>
+        <i class="fa-solid fa-chevron-down section-icon"></i>
+    </div>
+    <div class="section-content" id="content-local">
+        <!-- GUÍA RÁPIDA LOCAL -->
+        <div class="card" style="margin-bottom: 1.5rem; border-color: rgba(6, 182, 212, 0.3); background: rgba(6, 182, 212, 0.02);">
+            <div style="padding: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; font-size: 0.75rem;">
+                <div>
+                    <b style="color: var(--primary); display: block; margin-bottom: 0.3rem;">1. ENCENDIDO</b>
+                    <p style="color: var(--text-muted);">Dale START al Server y luego al Client. Abre <b>localhost:3030</b>.</p>
+                </div>
+                <div>
+                    <b style="color: var(--primary); display: block; margin-bottom: 0.3rem;">2. RELLENO</b>
+                    <p style="color: var(--text-muted);">Si no ves habitaciones en el Mac, pulsa el botón <b>SEED LOCAL</b>.</p>
+                </div>
+                <div>
+                    <b style="color: var(--primary); display: block; margin-bottom: 0.3rem;">3. PRUEBA</b>
+                    <p style="color: var(--text-muted);">Puedes pagar con la tarjeta '4242' y Stripe te regresará aquí.</p>
+                </div>
+            </div>
         </div>
-        <div style="padding: 1.2rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
-            <div>
-                <b style="color: var(--primary); display: block; margin-bottom: 0.5rem;">PASO 1: GIT PUSH</b>
-                <p style="font-size: 0.8rem; color: var(--text-muted);">Sube todos los cambios que hiciste en este Mac a GitHub. Sin esto, el servidor no verá el código nuevo.</p>
+        <div class="grid">
+            <!-- BACKEND -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-server"></i> Server (Express)</div>
+                    <div class="controls">
+                        <button class="btn btn-run" id="run-server" onclick="sendCommand('run', 'server')"><i class="fa-solid fa-play"></i> START</button>
+                        <button class="btn btn-stop" id="stop-server" onclick="sendCommand('stop', 'server')" disabled><i class="fa-solid fa-stop"></i> STOP</button>
+                    </div>
+                </div>
+                <div class="terminal" id="logs-server"></div>
             </div>
-            <div>
-                <b style="color: var(--primary); display: block; margin-bottom: 0.5rem;">PASO 2: SERVER DEPLOY</b>
-                <p style="font-size: 0.8rem; color: var(--text-muted);">Hace que el servidor remoto baje el código de GitHub y se reinicie para aplicar los cambios de Stripe.</p>
+
+            <!-- FRONTEND -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-brands fa-react"></i> Client (Vite)</div>
+                    <div class="controls">
+                        <button class="btn btn-run" id="run-client" onclick="sendCommand('run', 'client')"><i class="fa-solid fa-play"></i> START</button>
+                        <button class="btn btn-stop" id="stop-client" onclick="sendCommand('stop', 'client')" disabled><i class="fa-solid fa-stop"></i> STOP</button>
+                    </div>
+                </div>
+                <div class="terminal" id="logs-client"></div>
             </div>
-            <div>
-                <b style="color: var(--primary); display: block; margin-bottom: 0.5rem;">PASO 3: SEED REMOTO</b>
-                <p style="font-size: 0.8rem; color: var(--text-muted);">Solo si faltan habitaciones en la web. Borra y llena la base de datos remota con los datos base.</p>
+
+            <!-- DATABASE -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-database"></i> Database (Prisma)</div>
+                </div>
+                <div class="db-controls">
+                    <div class="db-btn-wrapper">
+                        <button class="btn-db" onclick="sendCommand('run', 'db', 'push')">DB PUSH</button>
+                        <span class="db-hint">Sincroniza tablas.</span>
+                    </div>
+                    <div class="db-btn-wrapper">
+                        <button class="btn-db" onclick="sendCommand('run', 'db', 'seed')">SEED LOCAL</button>
+                        <span class="db-hint">Llena el hotel.</span>
+                    </div>
+                    <div class="db-btn-wrapper">
+                        <button class="btn-db" onclick="sendCommand('run', 'db', 'gen')">GENERATE</button>
+                        <span class="db-hint">Prepara el código.</span>
+                    </div>
+                    <div class="db-btn-wrapper">
+                        <button class="btn-db" onclick="clearLogs('db')">CLEAR LOGS</button>
+                        <span class="db-hint">Limpia histórico.</span>
+                    </div>
+                </div>
+                <div class="terminal" id="logs-db" style="height: 180px;"></div>
+            </div>
+
+            <!-- GIT SYNC -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-brands fa-github"></i> Git & GitHub</div>
+                    <div class="controls">
+                        <button class="btn btn-run" onclick="sendCommand('run', 'git_status')" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #fff;">STATUS</button>
+                    </div>
+                </div>
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; gap: 0.5rem; flex-direction: column;">
+                    <input type="text" id="deploy-msg" placeholder="Mensaje de commit..." style="width: 100%; background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; color: #fff; font-size: 0.8rem; outline: none; margin-bottom: 0.5rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <button class="btn btn-run" id="run-git_push" onclick="const msg = document.getElementById('deploy-msg').value; sendCommand('run', 'git_push', msg || 'Update from Console')"><i class="fa-solid fa-arrow-up-from-bracket"></i> PUSH</button>
+                        <button class="btn btn-stop" id="run-git_force" onclick="if(confirm('¿Estás seguro? Esto borrará conflictos y forzará la subida.')) sendCommand('run', 'git_force')" style="font-size: 0.7rem;"><i class="fa-solid fa-bolt"></i> FORCE FIX</button>
+                    </div>
+                </div>
+                <div class="terminal" id="logs-git_push" style="height: 140px;"></div>
+                <div class="terminal" id="logs-git_status" style="display: none;"></div>
+                <div class="terminal" id="logs-git_force" style="display: none;"></div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="grid">
-    <!-- BACKEND -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title"><i class="fa-solid fa-server"></i> Server (Express)</div>
-            <div class="controls">
-                <button class="btn btn-run" id="run-server" onclick="sendCommand('run', 'server')"><i class="fa-solid fa-play"></i> START</button>
-                <button class="btn btn-stop" id="stop-server" onclick="sendCommand('stop', 'server')" disabled><i class="fa-solid fa-stop"></i> STOP</button>
+<!-- SECCIÓN PRODUCCIÓN -->
+<div class="section-wrapper" id="section-prod" style="border-color: #f59e0b;">
+    <div class="section-header" onclick="toggleSection('prod')">
+        <div class="section-title" style="color: #f59e0b;"><i class="fa-solid fa-globe"></i> PRODUCCIÓN (hoteltriz.duckdns.org)</div>
+        <i class="fa-solid fa-chevron-down section-icon"></i>
+    </div>
+    <div class="section-content hidden" id="content-prod">
+        <!-- GUÍA RÁPIDA PRODUCCIÓN -->
+        <div class="card" style="margin-bottom: 1.5rem; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.02);">
+            <div style="padding: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; font-size: 0.75rem;">
+                <div>
+                    <b style="color: #f59e0b; display: block; margin-bottom: 0.3rem;">1. SUBIR CAMBIOS (PUSH)</b>
+                    <p style="color: var(--text-muted);">Usa el botón <b>PUSH</b> de la sección Local para enviar tu código a GitHub.</p>
+                </div>
+                <div>
+                    <b style="color: #f59e0b; display: block; margin-bottom: 0.3rem;">2. DESPLEGAR (DEPLOY)</b>
+                    <p style="color: var(--text-muted);">Pulsa <b>DEPLOY</b> abajo para que el servidor de internet se actualice solo.</p>
+                </div>
+                <div>
+                    <b style="color: #f59e0b; display: block; margin-bottom: 0.3rem;">3. SEED REMOTO</b>
+                    <p style="color: var(--text-muted);">Solo si la web real está vacía, usa <b>SEED REMOTO</b> para inyectar datos.</p>
+                </div>
             </div>
         </div>
-        <div class="terminal" id="logs-server"></div>
-    </div>
-
-    <!-- FRONTEND -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title"><i class="fa-brands fa-react"></i> Client (Vite)</div>
-            <div class="controls">
-                <button class="btn btn-run" id="run-client" onclick="sendCommand('run', 'client')"><i class="fa-solid fa-play"></i> START</button>
-                <button class="btn btn-stop" id="stop-client" onclick="sendCommand('stop', 'client')" disabled><i class="fa-solid fa-stop"></i> STOP</button>
-            </div>
-        </div>
-        <div class="terminal" id="logs-client"></div>
-    </div>
-
-    <!-- DATABASE -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title"><i class="fa-solid fa-database"></i> Database (Prisma)</div>
-        </div>
-        <div class="db-controls">
-            <button class="btn btn-db" onclick="sendCommand('run', 'db', 'push')"><i class="fa-solid fa-upload"></i> DB PUSH</button>
-            <button class="btn btn-db" onclick="sendCommand('run', 'db', 'seed')"><i class="fa-solid fa-seedling"></i> RUN SEED</button>
-            <button class="btn btn-db" onclick="sendCommand('run', 'db', 'gen')"><i class="fa-solid fa-gears"></i> GENERATE</button>
-            <button class="btn btn-db" onclick="clearLogs('db')"><i class="fa-solid fa-trash"></i> CLEAR LOGS</button>
-        </div>
-        <div class="terminal" id="logs-db" style="height: 195px;"></div>
-    </div>
-
-    <!-- GIT SYNC -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title"><i class="fa-brands fa-github"></i> Git Sync (Hacia GitHub)</div>
-            <div class="controls">
-                <button class="btn btn-run" id="run-git_push" onclick="const msg = document.getElementById('deploy-msg').value; sendCommand('run', 'git_push', msg || 'Update from Console')"><i class="fa-solid fa-arrow-up-from-bracket"></i> PUSH</button>
-            </div>
-        </div>
-        <div style="padding: 1rem; border-bottom: 1px solid var(--border);">
-            <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem;">Paso previo obligatorio antes del Deploy:</p>
-            <input type="text" id="deploy-msg" placeholder="Mensaje de commit..." style="width: 100%; background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; color: #fff; font-size: 0.8rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
-        </div>
-        <div class="terminal" id="logs-git_push" style="height: 170px;"></div>
-    </div>
-
-    <!-- ENTORNO REMOTO (PRODUCCIÓN) -->
-    <div class="card" style="border-color: #f59e0b; grid-column: span 2;">
-        <div class="card-header" style="background: rgba(245, 158, 11, 0.05);">
-            <div class="card-title" style="color: #f59e0b;"><i class="fa-solid fa-globe"></i> PRODUCCIÓN (hoteltriz.duckdns.org)</div>
-            <div style="font-size: 0.7rem; color: #f59e0b; font-weight: 700; border: 1px solid #f59e0b; padding: 2px 8px; border-radius: 4px;">REMOTO</div>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border);">
-            <div style="padding: 1.5rem; border-right: 1px solid var(--border);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <span style="font-weight: 700; font-size: 0.9rem;">1. Sync & Deploy</span>
-                    <div class="controls">
-                        <button class="btn btn-run" id="run-server_deploy" onclick="sendCommand('run', 'server_deploy')"><i class="fa-solid fa-rocket"></i> DEPLOY</button>
+        <div class="grid">
+            <div class="card" style="border-color: #f59e0b; grid-column: span 2;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border);">
+                    <div style="padding: 1.5rem; border-right: 1px solid var(--border);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span style="font-weight: 700; font-size: 0.9rem;">1. Sync & Deploy</span>
+                            <div class="controls">
+                                <button class="btn btn-run" id="run-server_deploy" onclick="sendCommand('run', 'server_deploy')"><i class="fa-solid fa-rocket"></i> DEPLOY</button>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.7rem; color: var(--text-muted);">Sincroniza el servidor con los últimos cambios y reinicia Node.</p>
+                        <div class="terminal" id="logs-server_deploy" style="height: 150px; margin-top: 1rem;"></div>
+                    </div>
+                    <div style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span style="font-weight: 700; font-size: 0.9rem;">2. Base de Datos Remota</span>
+                            <div class="controls">
+                                <button class="btn btn-run" id="run-remote_seed" onclick="sendCommand('run', 'remote_seed')" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.2);"><i class="fa-solid fa-seedling"></i> SEED REMOTO</button>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.7rem; color: var(--text-muted);">Rellena el hotel en internet con los datos base.</p>
+                        <div class="terminal" id="logs-remote_seed" style="height: 150px; margin-top: 1rem;"></div>
                     </div>
                 </div>
-                <p style="font-size: 0.7rem; color: var(--text-muted);">Sincroniza el servidor con los últimos cambios de GitHub y reinicia PM2.</p>
-                <div class="terminal" id="logs-server_deploy" style="height: 150px; margin-top: 1rem;"></div>
-            </div>
-            <div style="padding: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <span style="font-weight: 700; font-size: 0.9rem;">2. Base de Datos Remota</span>
-                    <div class="controls">
-                        <button class="btn btn-run" id="run-remote_seed" onclick="sendCommand('run', 'remote_seed')" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.2);"><i class="fa-solid fa-seedling"></i> SEED REMOTO</button>
-                    </div>
-                </div>
-                <p style="font-size: 0.7rem; color: var(--text-muted);">Ejecuta 'db push' y 'seed' en el servidor remoto de DuckDNS.</p>
-                <div class="terminal" id="logs-remote_seed" style="height: 150px; margin-top: 1rem;"></div>
             </div>
         </div>
     </div>
@@ -247,7 +305,14 @@
 
         eventSource.addEventListener('init', (e) => {
             const data = JSON.parse(e.data);
-            Object.keys(data).forEach(app => updateUI(app, data[app].state));
+            Object.keys(data).forEach(app => {
+                updateUI(app, data[app].state);
+                // Si hay logs históricos, los pintamos
+                if (data[app].logs && data[app].logs.length > 0) {
+                    clearLogs(app); // Evitamos duplicados
+                    data[app].logs.forEach(log => appendLog(app, log.time, log.content));
+                }
+            });
         });
 
         eventSource.addEventListener('state-change', (e) => {
@@ -259,6 +324,13 @@
             const data = JSON.parse(e.data);
             appendLog(data.app, data.time, data.content);
         });
+    }
+
+    function toggleSection(id) {
+        const wrapper = document.getElementById(`section-${id}`);
+        const content = document.getElementById(`content-${id}`);
+        const isOpen = wrapper.classList.toggle('open');
+        content.classList.toggle('hidden', !isOpen);
     }
 
     function updateUI(app, state) {

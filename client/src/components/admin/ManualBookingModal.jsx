@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { roomService } from '../../services/api';
 
-const ManualBookingModal = ({ isOpen, onClose, allRooms, onSuccess }) => {
+const ManualBookingModal = ({ isOpen, onClose, allRooms, onSuccess, initialData }) => {
   const [formData, setFormData] = useState({
     guestName: '',
     checkIn: '',
@@ -11,6 +11,23 @@ const ManualBookingModal = ({ isOpen, onClose, allRooms, onSuccess }) => {
   });
   const [loading, setLoading] = useState(false);
   const [conflictError, setConflictError] = useState(null);
+
+  // Pre-llenar si viene información del calendario
+  React.useEffect(() => {
+    if (initialData && isOpen) {
+      setFormData(prev => ({
+        ...prev,
+        ...initialData,
+        // Asegurar que las fechas estén en formato YYYY-MM-DD para el input type="date"
+        checkIn: initialData.checkIn ? new Date(initialData.checkIn).toISOString().split('T')[0] : '',
+        checkOut: initialData.checkOut ? new Date(initialData.checkOut).toISOString().split('T')[0] : ''
+      }));
+    } else if (!isOpen) {
+      // Limpiar al cerrar
+      setFormData({ guestName: '', checkIn: '', checkOut: '', roomId: '', totalPrice: '' });
+      setConflictError(null);
+    }
+  }, [initialData, isOpen]);
 
   if (!isOpen) return null;
 

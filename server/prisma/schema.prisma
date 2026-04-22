@@ -56,19 +56,31 @@ model ExtraService {
 }
 
 model Booking {
-  id              String   @id @default(cuid())
-  guestName       String
-  guestEmail      String
-  checkIn         DateTime
-  checkOut        DateTime
-  status          String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED, COMPLETED
-  totalPrice      Float
-  source          String   @default("LOCAL") // LOCAL, AIRBNB, BOOKING
-  externalId      String?  // ID de la reserva externa
-  stripeSessionId String?  // ID de la sesión de Stripe
-  roomId          String
-  room            Room     @relation(fields: [roomId], references: [id])
-  extraServices   ExtraService[] @relation("BookingToExtraService")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  guestName             String
+  guestEmail            String
+  checkIn               DateTime
+  checkOut              DateTime
+  status                String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED, COMPLETED
+  totalPrice            Float
+  source                String   @default("LOCAL") // LOCAL, AIRBNB, BOOKING
+  externalId            String?  // ID de la reserva externa
+  stripeSessionId       String?  // ID de la sesión de Stripe
+  roomId                String
+  room                  Room     @relation(fields: [roomId], references: [id])
+  extraServices         ExtraService[] @relation("BookingToExtraService")
+  
+  // Gestión de Cancelación
+  cancellationReasonId  String?
+  cancellationReason    CancellationReason? @relation(fields: [cancellationReasonId], references: [id])
+  cancellationDetails   String?  // Para el detalle de "Otro motivo"
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model CancellationReason {
+  id        String    @id @default(cuid())
+  name      String    // e.g., No Show, Error en reserva, etc.
+  bookings  Booking[]
 }

@@ -46,8 +46,25 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
     localStorage.getItem('hotelTrizAdminAuth') === 'true'
   );
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('hoteltriz2026');
   const [loginError, setLoginError] = useState('');
+
+  // Sincronizar Vista con la URL (Hash Routing)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#/admin')) {
+        setView('admin');
+      } else {
+        setView('client');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Verificar al cargar
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -301,7 +318,8 @@ function App() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {roomTypes.map(roomType => (
+                  {/* Agrupamos por NOMBRE de Tipo para que si hay varios "Standard" en la DB, solo salga uno */}
+                  {Array.from(new Map(roomTypes.map(rt => [rt.name, rt])).values()).map(roomType => (
                     <div key={roomType.id} onClick={() => { setSelectedRoom(roomType); setShowExtras(true); }} className={`cursor-pointer transition-all duration-300 rounded-2xl ${selectedRoom?.id === roomType.id ? 'ring-2 ring-[#C5A059] p-1 shadow-md bg-white' : ''}`}>
                       <RoomCard roomType={roomType} />
                     </div>
@@ -314,7 +332,8 @@ function App() {
             <div id="servicios" className="space-y-8">
               <h3 className="text-xl font-semibold tracking-tight text-[#111] border-b border-gray-200 pb-4">Añadir Servicios</h3>
               <div className="space-y-4">
-                {allExtras.map(extra => (
+                {/* Filtramos servicios por nombre para evitar duplicados visuales */}
+                {Array.from(new Map(allExtras.map(ex => [ex.name, ex])).values()).map(extra => (
                   <div 
                     key={extra.id} 
                     onClick={() => toggleExtra(extra.id)}
