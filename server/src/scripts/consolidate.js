@@ -7,6 +7,10 @@ async function main() {
   });
   const prisma = new PrismaClient({ adapter });
   console.log('🛡️  INICIANDO SANEAMIENTO DE INTEGRIDAD (Modo Adaptador)...');
+  
+  // Debug: Ver modelos disponibles si falla
+  const models = Object.keys(prisma).filter(k => !k.startsWith('_') && !k.startsWith('$'));
+  console.log('📦 Modelos detectados en Prisma:', models.join(', '));
 
   try {
     // 1. Consolidar Tipos de Habitación (por nombre)
