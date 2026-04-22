@@ -49,6 +49,30 @@ async function main() {
       }
     }
 
+    // 3. Consolidar Servicios Extra (por nombre)
+    const extras = await prisma.extraService.findMany({ include: { _count: { select: { bookings: true } } } });
+    const extraGroups = {};
+    extras.forEach(e => {
+      if (!extraGroups[e.name]) extraGroups[e.name] = [];
+      extraGroups[e.name].push(e);
+    });
+
+    for (const [name, list] of Object.entries(extraGroups)) {
+      if (list.length > 1) {
+        console.log(`  - Consolidando Servicio Extra: "${name}"`);
+        const master = list.sort((a,b) => b._count.bookings - a._count.bookings)[0];
+        const dups = list.filter(e => e.id !== master.id);
+        for (const dup of dups) {
+          // Actualizar relaciones en la tabla pivot de reservas
+          await prisma.extraServiceOnBooking.updateMany({
+            where: { extraServiceId: dup.id },
+            data: { extraServiceId: master.id }
+          });
+          await prisma.extraService.delete({ where: { id: dup.id } });
+        }
+      }
+    }
+
     console.log('✅ SANEAMIENTO COMPLETADO.');
   } catch (error) {
     console.error('❌ ERROR DURANTE EL SANEAMIENTO:', error);
