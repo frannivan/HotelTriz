@@ -66,8 +66,13 @@ export const roomService = {
     const response = await api.get('/admin/bookings');
     return response.data;
   },
+  // Gestión de estado general y limpieza
   updateRoomStatus: async (id, status) => {
     const response = await api.patch(`/admin/rooms/${id}`, { status });
+    return response.data;
+  },
+  updateHousekeepingStatus: async (id, housekeepingStatus) => {
+    const response = await api.patch(`/admin/rooms/${id}/housekeeping`, { housekeepingStatus });
     return response.data;
   },
   // Módulo Housekeeping (Limpieza)
@@ -75,8 +80,21 @@ export const roomService = {
     const response = await api.get('/admin/housekeeping');
     return response.data;
   },
-  updateHousekeepingStatus: async (id, housekeepingStatus) => {
-    const response = await api.patch(`/admin/rooms/${id}/housekeeping`, { housekeepingStatus });
+  // Gestión Profesional de Bloqueos Técnicos
+  getMaintenanceBlocks: async () => {
+    const response = await api.get('/admin/maintenance-blocks');
+    return response.data;
+  },
+  createMaintenanceBlock: async (blockData) => {
+    const response = await api.post('/admin/maintenance-blocks', blockData);
+    return response.data;
+  },
+  updateMaintenanceBlock: async (id, blockData) => {
+    const response = await api.patch(`/admin/maintenance-blocks/${id}`, blockData);
+    return response.data;
+  },
+  deleteMaintenanceBlock: async (id) => {
+    const response = await api.delete(`/admin/maintenance-blocks/${id}`);
     return response.data;
   },
   // Métodos de Sincronización (Fase 4)

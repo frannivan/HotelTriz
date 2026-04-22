@@ -3,6 +3,7 @@ import { roomService } from './services/api';
 import RoomCard from './components/ui/RoomCard';
 import BookingSummary from './components/ui/BookingSummary';
 import AdminDashboard from './components/admin/AdminDashboard';
+import OTASimulator from './components/admin/OTASimulator';
 
 function App() {
   const [view, setView] = useState('client'); 
@@ -55,6 +56,8 @@ function App() {
       const hash = window.location.hash;
       if (hash.startsWith('#/admin')) {
         setView('admin');
+      } else if (hash === '#/simulador') {
+        setView('simulator');
       } else {
         setView('client');
       }
@@ -252,6 +255,8 @@ function App() {
 
       {view === 'admin' ? (
         <AdminDashboard />
+      ) : view === 'simulator' ? (
+        <OTASimulator />
       ) : (
         <>
           {/* Navbar Modern */}

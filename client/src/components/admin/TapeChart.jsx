@@ -16,8 +16,9 @@ const formatDateForInput = (dateStr) => {
   return d.toISOString().split('T')[0];
 };
 
-const TapeChart = ({ onOpenBookingModal }) => {
+const TapeChart = ({ onOpenBookingModal, onOpenMaintenanceModal }) => {
   const [bookings, setBookings] = useState([]);
+  const [maintenanceBlocks, setMaintenanceBlocks] = useState([]);
   const [allRooms, setAllRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -109,14 +110,16 @@ const TapeChart = ({ onOpenBookingModal }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [bookingsData, roomsData, reasonsData] = await Promise.all([
+        const [bookingsData, roomsData, blocksData, reasonsData] = await Promise.all([
           roomService.getAdminBookings().catch(() => []),
           roomService.getHousekeepingTasks().catch(() => []),
+          roomService.getMaintenanceBlocks().catch(() => []),
           roomService.getCancellationReasons().catch(() => [])
         ]);
         
         setBookings(Array.isArray(bookingsData) ? bookingsData : []);
         setAllRooms(Array.isArray(roomsData) ? roomsData : []);
+        setMaintenanceBlocks(Array.isArray(blocksData) ? blocksData : []);
         setReasons(Array.isArray(reasonsData) ? reasonsData : []);
         setLoading(false);
       } catch (err) {
@@ -566,10 +569,7 @@ const TapeChart = ({ onOpenBookingModal }) => {
                       // Ajuste visual para evitar solapamientos en días de cambio
                       // Si la reserva empieza hoy en esta vista -> abajo
                       // Si la reserva termina hoy en esta vista -> arriba
-                      const startsToday = bStartMs >= gridStart && bStartMs < (gridStart + msPerDay);
-                      const endsToday = bEndMs > (gridEnd - msPerDay) && bEndMs <= gridEnd;
-
-                      const colorClass = booking.source !== 'LOCAL' ? 'bg-[#C5A059]' : (booking.status === 'PENDING' ? 'bg-amber-400' : 'bg-[#111]');
+                      let colorClass = booking.source !== 'LOCAL' ? 'bg-[#C5A059]' : (booking.status === 'PENDING' ? 'bg-amber-400' : 'bg-[#111]');
 
                       return (
                         <div 
@@ -586,16 +586,11 @@ const TapeChart = ({ onOpenBookingModal }) => {
                             });
                             setIsEditing(false); 
                           }}
-                          className={`absolute z-10 flex items-center px-2 text-[9px] font-bold text-white shadow-md overflow-hidden cursor-pointer hover:scale-[1.01] transition-all group/booking ${colorClass} rounded-md border border-white/20 opacity-90`}
-                          style={{ 
-                            left: `${leftPercent}%`, 
-                            width: `${widthPercent}%`,
-                            top: '4px',
-                            bottom: '4px'
-                          }}
+                          className={`absolute z-10 flex items-center px-2 text-[9px] font-black text-white shadow-md overflow-hidden cursor-pointer hover:scale-[1.01] transition-all group/booking ${colorClass} rounded-md border border-white/20 opacity-90`}
+                          style={{ left: `${leftPercent}%`, width: `${widthPercent}%`, top: '4px', bottom: '4px' }}
                           title={`${booking.guestName} (${booking.source})`}
                         >
-                          <span className="truncate flex-1">{booking.guestName || booking.source}</span>
+                          <span className="truncate flex-1 font-black">{booking.guestName || booking.source}</span>
                           
                           {/* Resize Handle */}
                           {viewMode === 'chart' && (
@@ -606,6 +601,47 @@ const TapeChart = ({ onOpenBookingModal }) => {
                               <div className="w-[1px] h-3 bg-white/50"></div>
                             </div>
                           )}
+                        </div>
+                      );
+                    })}
+
+                    {/* 2. BLOQUEOS TÉCNICOS (Renderizado en Rojo Profesional) */}
+                    {maintenanceBlocks.filter(b => b.roomId === room.id).map(block => {
+                      const msPerDay = 1000 * 60 * 60 * 24;
+                      const gridStart = dates[0].getTime();
+                      const gridEnd = dates[dates.length - 1].getTime() + msPerDay;
+                      const bStart = new Date(block.startDate);
+                      const bEnd = new Date(block.endDate);
+                      const visibleStart = Math.max(bStart.getTime(), gridStart);
+                      const visibleEnd = Math.min(bEnd.getTime(), gridEnd);
+                      if (visibleStart >= visibleEnd) return null;
+                      const totalGridDuration = gridEnd - gridStart;
+                      const leftPercent = ((visibleStart - gridStart) / totalGridDuration) * 100;
+                      const widthPercent = ((visibleEnd - visibleStart) / totalGridDuration) * 100;
+
+                      return (
+                        <div 
+                          key={block.id}
+                          className="absolute z-20 flex items-center px-2 text-[8px] font-black shadow-lg overflow-hidden transition-all group/block border-y border-red-500/30"
+                          style={{ 
+                            left: `${leftPercent}%`, width: `${widthPercent}%`, top: '2px', bottom: '2px',
+                            backgroundColor: 'rgba(220, 38, 38, 0.35)', 
+                            backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(220, 38, 38, 0.1) 10px, rgba(220, 38, 38, 0.1) 20px)`,
+                            color: '#991b1b', cursor: 'pointer'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Pasamos los datos del bloqueo para edición
+                            if (onOpenMaintenanceModal) {
+                              onOpenMaintenanceModal(block);
+                            }
+                          }}
+                          title={`BLOQUEO TÉCNICO: ${block.reason}`}
+                        >
+                          <div className="flex items-center gap-1 w-full justify-center">
+                            <i className="fa-solid fa-screwdriver-wrench text-[10px]"></i>
+                            <span className="tracking-tighter uppercase whitespace-nowrap">FUERA DE SERVICIO</span>
+                          </div>
                         </div>
                       );
                     })}

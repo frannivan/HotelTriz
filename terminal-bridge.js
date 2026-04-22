@@ -16,7 +16,8 @@ const processes = {
     git_status: { child: null, state: 'stopped', logs: [] },
     git_force: { child: null, state: 'stopped', logs: [] },
     server_deploy: { child: null, state: 'stopped', logs: [] },
-    remote_seed: { child: null, state: 'stopped', logs: [] }
+    remote_seed: { child: null, state: 'stopped', logs: [] },
+    local_deploy: { child: null, state: 'stopped', logs: [] }
 };
 
 const clients = new Set();
@@ -140,6 +141,11 @@ const server = http.createServer((req, res) => {
         else if (app === 'server_deploy') {
             const deployCmd = `ssh -i /Users/franivan/Documents/ProyectosWeb/AbTech/ssh-key-2026-01-09.key -o StrictHostKeyChecking=no ubuntu@143.47.101.209 "cd /home/ubuntu/HotelTriz && git fetch --all && git reset --hard origin/main && git clean -fd && cd server && npm install && npm run deploy && cd ../client && npm install && npm run build && pm2 restart all"`;
             runCommand('server_deploy', deployCmd, [], '.');
+        }
+        else if (app === 'local_deploy') {
+            // Usamos rutas absolutas de macOS para evitar el error 'command not found'
+            const localCmd = `/usr/local/bin/node /usr/local/bin/npm run deploy`;
+            runCommand('local_deploy', localCmd, [], 'server');
         }
         else if (app === 'remote_seed') {
             const remoteDbUrl = "file:/home/ubuntu/HotelTriz/server/prisma/dev.db";

@@ -186,11 +186,16 @@
                         <span class="db-hint">Prepara el código.</span>
                     </div>
                     <div class="db-btn-wrapper">
+                        <button class="btn-db" style="background: var(--primary); color: #fff; border: none;" onclick="sendCommand('run', 'local_deploy')">SYNC LOCAL</button>
+                        <span class="db-hint">Limpia y Sincroniza.</span>
+                    </div>
+                    <div class="db-btn-wrapper">
                         <button class="btn-db" onclick="clearLogs('db')">CLEAR LOGS</button>
                         <span class="db-hint">Limpia histórico.</span>
                     </div>
                 </div>
                 <div class="terminal" id="logs-db" style="height: 180px;"></div>
+                <div class="terminal" id="logs-local_deploy" style="height: 180px; display: none;"></div>
             </div>
 
             <!-- GIT SYNC -->

@@ -10,91 +10,60 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Iniciando Seed (Prisma 7 - Extras)...');
 
-  // 1. Crear o encontrar el hotel
-  let hotel = await prisma.hotel.findFirst();
-  
-  if (!hotel) {
-    hotel = await prisma.hotel.create({
-      data: {
-        name: 'HotelTriz Demo',
-        domain: 'hoteltriz.com'
-      }
-    });
-    console.log('✅ Hotel base creado.');
-  }
-
-  // 2. Crear Tipos de Habitación (Upsert)
-  const standard = await prisma.roomType.upsert({
-    where: { name: 'Standard Room' },
+  // 1. Limpieza básica o Asegurar Hotel principal
+  const hotel = await prisma.hotel.upsert({
+    where: { id: "cmnzxqrot0000cs8onjcau8rf" },
     update: {},
     create: {
-      name: 'Standard Room',
-      description: 'Habitación cómoda con vista a la ciudad.',
-      basePrice: 120.0,
-      capacity: 2,
-      hotelId: hotel.id
+      id: "cmnzxqrot0000cs8onjcau8rf",
+      name: "HotelTriz Luxury",
+      domain: "hoteltriz.duckdns.org",
     }
   });
 
-  const suite = await prisma.roomType.upsert({
-    where: { name: 'Luxury Suite' },
-    update: {},
-    create: {
-      name: 'Luxury Suite',
-      description: 'Suite amplia con jacuzzi y balcón.',
-      basePrice: 250.0,
-      capacity: 4,
-      hotelId: hotel.id
-    }
-  });
-  console.log('✅ Tipos de Habitación asegurados.');
-
-  // 3. Crear Habitaciones Físicas (Upsert)
-  for (let i = 1; i <= 5; i++) {
-    const num = `10${i}`;
-    await prisma.room.upsert({
-      where: { number: num },
-      update: { roomTypeId: standard.id },
-      create: { number: num, floor: 1, roomTypeId: standard.id }
-    });
-  }
-  for (let i = 1; i <= 3; i++) {
-    const num = `20${i}`;
-    await prisma.room.upsert({
-      where: { number: num },
-      update: { roomTypeId: suite.id },
-      create: { number: num, floor: 2, roomTypeId: suite.id }
-    });
-  }
-  const allRooms = await prisma.room.findMany();
-  console.log('✅ Habitaciones físicas aseguradas.');
-
-  // 4. Crear Servicios Extra (Upsert)
-  const extrasData = [
-    { name: 'Desayuno Buffet Premium', description: 'Variedad de frutas frescas y platos calientes.', price: 25.0, hotelId: hotel.id },
-    { name: 'Acceso al Spa & Sauna', description: 'Relájate en nuestras instalaciones.', price: 45.0, hotelId: hotel.id }
+  // 2. Crear Tipos de Habitación (Lógica Manual para evitar errores de Upsert)
+  const roomTypesData = [
+    { name: "Standard Room", description: "Habitación cómoda con vista a la ciudad.", basePrice: 120, capacity: 2 },
+    { name: "Deluxe Suite", description: "Lujo y espacio con balcón privado.", basePrice: 250, capacity: 3 },
+    { name: "Presidential Suite", description: "La joya del hotel. Máximo lujo.", basePrice: 500, capacity: 4 }
   ];
-  
-  for (const extra of extrasData) {
-    await prisma.extraService.upsert({
-      where: { name: extra.name },
-      update: { price: extra.price },
-      create: extra
-    });
-  }
-  console.log('✅ Servicios Extra asegurados.');
 
-  // 5. Crear reservas de prueba (Solo si no hay reservas)
-  const bookingCount = await prisma.booking.count();
-  if (bookingCount === 0) {
-    const today = new Date();
-    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-    const nextWeek = new Date(today); nextWeek.setDate(today.getDate() + 7);
-    
-    await prisma.booking.create({
-      data: {
-        guestName: 'Francisco Ivan',
-        guestEmail: 'demo@hoteltriz.com',
+  const roomTypesMap = {};
+  for (const rt of roomTypesData) {
+    let createdRt = await prisma.roomType.findFirst({ where: { name: rt.name } });
+    if (!createdRt) {
+      createdRt = await prisma.roomType.create({
+        data: { ...rt, hotelId: hotel.id }
+      });
+    }
+    roomTypesMap[rt.name] = createdRt;
+  }
+
+  // 3. Crear Habitaciones
+  const roomsData = [
+    { number: "101", floor: 1, typeName: "Standard Room" },
+    { number: "102", floor: 1, typeName: "Standard Room" },
+    { number: "201", floor: 2, typeName: "Deluxe Suite" },
+    { number: "202", floor: 2, typeName: "Deluxe Suite" },
+    { number: "301", floor: 3, typeName: "Presidential Suite" }
+  ];
+
+  for (const r of roomsData) {
+    const existingRoom = await prisma.room.findFirst({ where: { number: r.number } });
+    if (!existingRoom) {
+      await prisma.room.create({
+        data: {
+          number: r.number,
+          floor: r.floor,
+          roomTypeId: roomTypesMap[r.typeName].id,
+          housekeepingStatus: "CLEAN"
+        }
+      });
+    }
+  }
+
+  // 4. Servicios Extra
+  const extrasData = [
         checkIn: today,
         checkOut: tomorrow,
         totalPrice: 120.0,

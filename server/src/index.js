@@ -208,6 +208,162 @@ app.post('/api/admin/bookings/:id/cancel', async (req, res) => {
   }
 });
 
+// Simulador de Agencias Externas (Booking/Airbnb)
+app.post('/api/admin/simulate-external-booking', async (req, res) => {
+  const { guestName, checkIn, checkOut, roomId, source } = req.body;
+  
+  try {
+    const booking = await prisma.booking.create({
+      data: {
+        guestName,
+        guestEmail: `sync-${Math.floor(Math.random() * 1000)}@${source.toLowerCase()}-tester.com`,
+        checkIn: new Date(checkIn),
+        checkOut: new Date(checkOut),
+        status: 'CONFIRMED',
+        totalPrice: 0, // En iCal/Simulación no siempre viene el precio
+        source,
+        externalId: `${source.substring(0,2).toUpperCase()}-${Math.floor(Math.random() * 899999 + 100000)}`,
+        roomId
+      }
+    });
+    res.json({ message: `Reserva de ${source} simulada con éxito`, booking });
+  } catch (error) {
+    console.error('Simulation Error:', error);
+    res.status(500).json({ error: 'Fallo al simular reserva externa' });
+  }
+});
+
+// === GESTIÓN DE BLOQUEOS DE MANTENIMIENTO (PROFESIONAL) ===
+
+// Listar bloqueos
+app.get('/api/admin/maintenance-blocks', async (req, res) => {
+  try {
+    const blocks = await prisma.maintenanceBlock.findMany({
+      include: { room: { include: { roomType: true } } },
+      orderBy: { startDate: 'asc' }
+    });
+    res.json(blocks);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener bloqueos' });
+  }
+});
+
+// Crear bloqueo
+app.post('/api/admin/maintenance-blocks', async (req, res) => {
+  const { roomId, startDate, endDate, reason } = req.body;
+  
+  try {
+    const sDate = new Date(startDate);
+    const eDate = new Date(endDate);
+    
+    // Validar fechas
+    if (sDate >= eDate) {
+      return res.status(400).json({ error: 'La fecha de inicio debe ser anterior a la de fin.' });
+    }
+
+    // Verificar colisiones con reservas existentes
+    const overlapBooking = await prisma.booking.findFirst({
+      where: {
+        roomId,
+        status: { not: 'CANCELLED' },
+        AND: [
+          { checkIn: { lt: eDate } },
+          { checkOut: { gt: sDate } }
+        ]
+      }
+    });
+
+    if (overlapBooking) {
+      return res.status(409).json({ error: 'Hay una reserva activa en esas fechas. Debe moverla antes de bloquear.' });
+    }
+
+    const block = await prisma.maintenanceBlock.create({
+      data: {
+        roomId,
+        startDate: sDate,
+        endDate: eDate,
+        reason
+      }
+    });
+    res.json(block);
+  } catch (error) {
+    console.error('Error creating block:', error);
+    res.status(500).json({ error: 'Error al crear bloqueo técnico' });
+  }
+});
+
+// Actualizar bloqueo
+app.patch('/api/admin/maintenance-blocks/:id', async (req, res) => {
+  const { id } = req.params;
+  const { startDate, endDate, reason } = req.body;
+  
+  try {
+    const sDate = startDate ? new Date(startDate) : undefined;
+    const eDate = endDate ? new Date(endDate) : undefined;
+
+    // Validar si las fechas son válidas si se proporcionaron
+    if ((startDate && isNaN(sDate.getTime())) || (endDate && isNaN(eDate.getTime()))) {
+      return res.status(400).json({ error: 'Formato de fecha inválido.' });
+    }
+
+    // Si se cambian fechas, verificar colisiones
+    if (sDate || eDate) {
+      const current = await prisma.maintenanceBlock.findUnique({ where: { id } });
+      if (!current) return res.status(404).json({ error: 'Bloqueo no encontrado.' });
+
+      const finalS = (startDate && !isNaN(sDate.getTime())) ? sDate : current.startDate;
+      const finalE = (endDate && !isNaN(eDate.getTime())) ? eDate : current.endDate;
+
+      // Validar orden de fechas
+      if (finalS >= finalE) {
+        return res.status(400).json({ error: 'La fecha de inicio debe ser anterior a la de fin.' });
+      }
+
+      const overlapBooking = await prisma.booking.findFirst({
+        where: {
+          roomId: current.roomId,
+          status: { not: 'CANCELLED' },
+          AND: [
+            { checkIn: { lt: finalE } },
+            { checkOut: { gt: finalS } }
+          ]
+        }
+      });
+
+      if (overlapBooking) {
+        return res.status(409).json({ error: 'Las nuevas fechas colisionan con una reserva existente.' });
+      }
+    }
+
+    const block = await prisma.maintenanceBlock.update({
+      where: { id },
+      data: {
+        startDate: sDate,
+        endDate: eDate,
+        reason
+      }
+    });
+    res.json(block);
+  } catch (error) {
+    console.error('SERVER PATCH ERROR:', error);
+    res.status(500).json({ 
+      error: 'Error interno al actualizar el bloqueo técnico',
+      details: error.message 
+    });
+  }
+});
+
+// Eliminar bloqueo
+app.delete('/api/admin/maintenance-blocks/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.maintenanceBlock.delete({ where: { id } });
+    res.json({ message: 'Bloqueo eliminado' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar bloqueo' });
+  }
+});
+
 // ==========================================
 // FIN RUTAS ADMINISTRATIVAS
 // ==========================================
@@ -233,14 +389,28 @@ app.post('/api/availability', async (req, res) => {
       },
       include: {
         rooms: {
+          where: { status: 'AVAILABLE' }, // Solo habitaciones operativas (Modo global)
           include: {
             bookings: {
               where: {
+                status: { not: 'CANCELLED' },
                 OR: [
                   {
                     AND: [
                       { checkIn: { lt: new Date(checkOut) } },
                       { checkOut: { gt: new Date(checkIn) } }
+                    ]
+                  }
+                ]
+              }
+            },
+            maintenanceBlocks: {
+              where: {
+                OR: [
+                  {
+                    AND: [
+                      { startDate: { lt: new Date(checkOut) } },
+                      { endDate: { gt: new Date(checkIn) } }
                     ]
                   }
                 ]
@@ -251,10 +421,11 @@ app.post('/api/availability', async (req, res) => {
       }
     });
 
-    // 2. Filtrar tipos que tengan al menos una habitación libre (sin colisiones)
+    // 2. Filtrar tipos que tengan al menos una habitación libre (sin colisiones de NINGÚN tipo)
     const availableRoomTypes = roomTypes.filter(type => {
-      // Una habitación está disponible si su array de bookings (filtrado por colisión) está vacío
-      const hasFreeRoom = type.rooms.some(room => room.bookings.length === 0);
+      const hasFreeRoom = type.rooms.some(room => 
+        room.bookings.length === 0 && room.maintenanceBlocks.length === 0
+      );
       return hasFreeRoom;
     });
 
@@ -449,6 +620,22 @@ app.patch('/api/admin/rooms/:id', async (req, res) => {
   }
 });
 
+// Cambiar estado de limpieza (Housekeeping)
+app.patch('/api/admin/rooms/:id/housekeeping', async (req, res) => {
+  const { id } = req.params;
+  const { housekeepingStatus } = req.body;
+
+  try {
+    const updated = await prisma.room.update({
+      where: { id },
+      data: { housekeepingStatus }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar limpieza' });
+  }
+});
+
 // Obtener Tareas de Limpieza Diarias (Housekeeping)
 app.get('/api/admin/housekeeping', async (req, res) => {
   try {
@@ -460,10 +647,13 @@ app.get('/api/admin/housekeeping', async (req, res) => {
     const rooms = await prisma.room.findMany({
       include: {
         roomType: true,
-        // Traer reservas que hagan checkout hoy (Departures)
+        // Traer reservas con movimiento HOY (Entradas o Salidas)
         bookings: {
           where: {
-            checkOut: { gte: today, lte: endOfDay },
+            OR: [
+              { checkOut: { gte: today, lte: endOfDay } },
+              { checkIn: { gte: today, lte: endOfDay } }
+            ],
             status: { not: 'CANCELLED' }
           }
         }

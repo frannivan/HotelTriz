@@ -4,6 +4,7 @@ import SyncSettings from './SyncSettings';
 import TapeChart from './TapeChart';
 import HousekeepingPanel from './HousekeepingPanel';
 import ManualBookingModal from './ManualBookingModal';
+import MaintenanceBlockModal from './MaintenanceBlockModal';
 
 const AdminDashboard = () => {
   // Inicialización inteligente desde el Hash para evitar saltos al refrescar
@@ -24,6 +25,7 @@ const AdminDashboard = () => {
   const [allRooms, setAllRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
   const [modalInitialData, setModalInitialData] = useState(null);
 
   // Actualizar Hash cuando cambia la pestaña (Solo si es un cambio manual)
@@ -48,6 +50,11 @@ const AdminDashboard = () => {
       console.error('Error fetching admin data:', err);
       setLoading(false);
     }
+  };
+
+  const handleOpenMaintenanceModal = (data = null) => {
+    setModalInitialData(data);
+    setIsMaintenanceModalOpen(true);
   };
 
   useEffect(() => {
@@ -105,6 +112,9 @@ const AdminDashboard = () => {
           </div>
         </div>
         <div className="flex gap-3">
+          <button onClick={() => handleOpenMaintenanceModal()} className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-[11px] font-bold tracking-wider uppercase shadow-sm flex items-center gap-2">
+            <i className="fa-solid fa-screwdriver-wrench"></i> Bloqueo Técnico
+          </button>
           <button onClick={() => { setModalInitialData(null); setIsModalOpen(true); }} className="px-5 py-2.5 bg-[#111] text-white rounded-lg hover:bg-[#C5A059] transition-colors text-[11px] font-semibold tracking-wider uppercase shadow-sm">
             <i className="fa-solid fa-plus mr-2"></i>Nueva Reserva
           </button>
@@ -215,6 +225,7 @@ const AdminDashboard = () => {
             setModalInitialData(data);
             setIsModalOpen(true);
           }}
+          onOpenMaintenanceModal={handleOpenMaintenanceModal}
         />
       )}
 
@@ -227,7 +238,19 @@ const AdminDashboard = () => {
         onClose={() => setIsModalOpen(false)} 
         allRooms={allRooms} 
         initialData={modalInitialData}
+        onSwitchToMaintenance={(data) => {
+          setIsModalOpen(false);
+          handleOpenMaintenanceModal(data);
+        }}
         onSuccess={() => { setIsModalOpen(false); fetchData(); window.dispatchEvent(new CustomEvent('refresh-calendar')); }} 
+      />
+
+      <MaintenanceBlockModal
+        isOpen={isMaintenanceModalOpen}
+        onClose={() => setIsMaintenanceModalOpen(false)}
+        allRooms={allRooms}
+        initialData={modalInitialData}
+        onSuccess={() => { setIsMaintenanceModalOpen(false); fetchData(); window.dispatchEvent(new CustomEvent('refresh-calendar')); }}
       />
     </div>
   );
