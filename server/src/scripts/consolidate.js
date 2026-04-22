@@ -67,11 +67,11 @@ async function main() {
         const master = list.sort((a,b) => b._count.bookings - a._count.bookings)[0];
         const dups = list.filter(e => e.id !== master.id);
         for (const dup of dups) {
-          // Actualizar relaciones en la tabla pivot de reservas
-          await prisma.extraServiceOnBooking.updateMany({
-            where: { extraServiceId: dup.id },
-            data: { extraServiceId: master.id }
-          });
+          // Usamos SQL Directo para actualizar la tabla pivot, ya que Prisma no la expone como modelo
+          await prisma.$executeRawUnsafe(
+            `UPDATE ExtraServiceOnBooking SET extraServiceId = ? WHERE extraServiceId = ?`,
+            master.id, dup.id
+          );
           await prisma.extraService.delete({ where: { id: dup.id } });
         }
       }
