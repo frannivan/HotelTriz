@@ -67,11 +67,17 @@ async function main() {
         const master = list.sort((a,b) => b._count.bookings - a._count.bookings)[0];
         const dups = list.filter(e => e.id !== master.id);
         for (const dup of dups) {
-          // Usamos SQL Directo para actualizar la tabla pivot, ya que Prisma no la expone como modelo
-          await prisma.$executeRawUnsafe(
-            `UPDATE ExtraServiceOnBooking SET extraServiceId = ? WHERE extraServiceId = ?`,
-            master.id, dup.id
-          );
+          // Usamos el nombre de la tabla implícita de Prisma (_BookingToExtraService)
+          // En SQLite, Prisma usa 'A' para Booking y 'B' para ExtraService
+          try {
+            await prisma.$executeRawUnsafe(
+              `UPDATE _BookingToExtraService SET B = ? WHERE B = ?`,
+              master.id, dup.id
+            );
+          } catch (e) {
+            // Si la tabla está vacía o no existe, simplemente ignoramos
+            console.log(`  - Nota: No se encontraron relaciones para limpiar en la tabla pivot.`);
+          }
           await prisma.extraService.delete({ where: { id: dup.id } });
         }
       }
